@@ -30,6 +30,13 @@ contract FundRaise {
         totalBalance[msg.sender] += msg.value;
         payableBalance[msg.sender] += msg.value;
     }
+
+    // PodoToken으로 스왑합니다.
+    function swapEtherToPodoToken(address _to, uint256 _amount) public {
+        require(payableBalance[_to] >= 0);
+        payableBalance[_to] -= _amount;
+        podo.mint(_to, _amount);
+    }
 }
 
 interface podoInterface {
