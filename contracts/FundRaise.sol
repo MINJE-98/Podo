@@ -1,44 +1,17 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
 contract FundRaise {
-    uint256 public mint;
-    podoInterface public podo;
-    Project public projects;
-    address[] public donator;
-
-    struct Project {
-        string title;
-        string desc;
-        uint256 targetmoney;
-        uint256 currentmoney;
-        uint256 state;
-        address[] donator;
-    }
-
+    // 특정 지갑이 입금한 전체 이더를 저장
     mapping(address => uint256) totalBalance;
+    // 특정 지갑이 입금한 이더에 PodoToken으로 Swap 가능한 개수
     mapping(address => uint256) payableBalance;
 
-    // event Received (address _to, uint _amount);
+    // 이더리움을 받는 메서드
     receive() external payable {
+        // 이더리움을 입금 받고 받은 만큼 배열에 저장
         totalBalance[msg.sender] += msg.value;
         payableBalance[msg.sender] += msg.value;
-        donator.push(msg.sender);
     }
-
-    constructor(address _podo) {
-        podo = podoInterface(_podo);
-    }
-
-    function total(address _to) public view returns (uint256) {
-        return totalBalance[_to];
-    }
-
-    // PodoToken으로 스왑합니다.
-    function swapEtherToPodoToken(address _to, uint256 _amount) public {
-        require(payableBalance[_to] >= 0);
-        payableBalance[_to] -= _amount;
-        podo.mint(_to, _amount);
-    }
-}
-
-interface podoInterface {
-    function mint(address _to, uint256 _amount) external;
 }
