@@ -31,6 +31,11 @@ contract FundRaise {
         payableBalance[msg.sender] += msg.value;
     }
 
+    // 사용자가 입금한 전체 이더리움 출력합니다.
+    function total(address _to) public view returns (uint256) {
+        return totalBalance[_to];
+    }
+
     // PodoToken으로 스왑합니다.
     function swapEtherToPodoToken(address _to, uint256 _amount) public {
         require(payableBalance[_to] >= 0);
