@@ -109,7 +109,10 @@ contract FundRaise {
     /**
         총 프로젝트 수
      */
-    function projectCount() public view returns (uint256) {}
+    function countsProject() public view returns (uint256) {
+        uint256 counts = projectInfo.length;
+        return counts;
+    }
 }
 
 interface BallotInterface {
