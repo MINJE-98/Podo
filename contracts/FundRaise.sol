@@ -44,11 +44,9 @@ contract FundRaise {
 
     /**
         모금활동을 등록
-    
         모금활동을 등록하는 단체는 시작 시간과, 종료 시간을 선택 가능.
 
-        조건
-
+        **조건
         _title, _desc 는 비어있으면 안됨
         _targetmoney는 0보다 커야함
      */
@@ -87,9 +85,9 @@ contract FundRaise {
     /**
         후원자들이 프로젝트에 기부
 
-        조건 
-        
-        기부 금액이 0보다 커야함.
+        **조건
+        프로젝트가 존재해야함
+        기부 금액이 0보다 커야함
      */
 
     function donateToProject(uint256 _pid, uint256 _amount) public {
@@ -111,10 +109,7 @@ contract FundRaise {
     /**
         총 프로젝트 수
      */
-    function projectCount() public view returns (uint256) {
-        uint256 counts = projectInfo.length - 1;
-        return counts;
-    }
+    function projectCount() public view returns (uint256) {}
 }
 
 interface BallotInterface {
