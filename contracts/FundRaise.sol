@@ -47,6 +47,21 @@ contract FundRaise {
     }
 
     /**
+        그룹을 생성합니다.
+     */
+    function createGroup(string memory _name, string memory _desc) public {
+        string memory empty = "";
+        require(
+            keccak256(bytes(_name)) != keccak256(bytes(empty)) &&
+                keccak256(bytes(_desc)) != keccak256(bytes(empty))
+        );
+        groupInfo.push(
+            GroupInfo({owner: msg.sender, name: _name, desc: _desc})
+        );
+        // TODO 프론트 이벤트 추가
+    }
+
+    /**
         모금활동을 등록
         모금활동을 등록하는 단체는 시작 시간과, 종료 시간을 선택 가능.
 
