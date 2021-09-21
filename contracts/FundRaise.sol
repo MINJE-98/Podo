@@ -14,6 +14,12 @@ contract FundRaise {
     struct UserInfo {
         uint256 amount;
     }
+    // 그룹 정보
+    struct GroupInfo {
+        address owner;
+        string name;
+        string desc;
+    }
 
     // 프로젝트
     struct ProjectInfo {
@@ -27,13 +33,11 @@ contract FundRaise {
 
     // podoInterface public podo;
     ProjectInfo[] public projectInfo;
+    GroupInfo[] public groupInfo;
     BallotInterface public ballot;
 
-    // Project[_pid][address]
     // 프로젝트 pid에 해당하는 유저 어드래스.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
-
-    receive() external payable {}
 
     constructor(IERC20 _podo, address _ballot) {
         // 포도 컨트랙트 주입
@@ -80,6 +84,7 @@ contract FundRaise {
                 endBlock: end
             })
         );
+        // TODO 프론트 이벤트 추가
     }
 
     /**
@@ -107,6 +112,7 @@ contract FundRaise {
         podo.transferFrom(address(msg.sender), address(this), _amount);
         // 기부자에게 투포권을 분배함
         ballot.mint(address(msg.sender), _amount);
+        // TODO 프론트 이벤트 추가
     }
 
     /**
@@ -114,6 +120,7 @@ contract FundRaise {
      */
     function countsProject() public view returns (uint256) {
         uint256 counts = projectInfo.length;
+        // TODO 프론트 이벤트 추가
         return counts;
     }
 }
