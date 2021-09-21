@@ -93,8 +93,11 @@ contract FundRaise {
     function donateToProject(uint256 _pid, uint256 _amount) public {
         // project[pid]에 해당하는 호출자 주소 정보를 가져옵니다.
         UserInfo storage user = userInfo[_pid][msg.sender];
+        uint256 nowBlock = block.number;
         // 사용가능한 프로젝트인지 확인
         require(projectInfo.length - 1 >= _pid);
+        // 모금이 끝난 프로젝트인지 확인
+        require(projectInfo[_pid].endBlock == nowBlock);
         // 기부 금액이 0보다 커야함
         require(_amount > 0);
         // 사용자 정보에 입금한 금액을 추가
