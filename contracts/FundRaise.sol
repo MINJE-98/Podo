@@ -45,6 +45,16 @@ contract FundRaise {
         ballot = BallotInterface(_ballot);
     }
 
+    // 그룹을 가지고있는 사용자만 프로젝트를 생성할 수 있습니다.
+    modifier onlyGroupOwner() {
+        string memory empty = "";
+        require(
+            keccak256(bytes(groupInfo[msg.sender].name)) !=
+                keccak256(bytes(empty))
+        );
+        _;
+    }
+
     /**
         그룹을 생성
 
