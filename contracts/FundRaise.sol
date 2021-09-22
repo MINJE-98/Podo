@@ -50,7 +50,8 @@ contract FundRaise {
         string memory empty = "";
         require(
             keccak256(bytes(groupInfo[msg.sender].name)) !=
-                keccak256(bytes(empty))
+                keccak256(bytes(empty)),
+            "PODO: You don't have a group."
         );
         _;
     }
@@ -65,7 +66,8 @@ contract FundRaise {
         string memory empty = "";
         require(
             keccak256(bytes(_name)) != keccak256(bytes(empty)) &&
-                keccak256(bytes(_desc)) != keccak256(bytes(empty))
+                keccak256(bytes(_desc)) != keccak256(bytes(empty)),
+            "PODO: Please input group name, desc."
         );
         // 메서드 호출자의 주소로 그룹을 생성
         groupInfo[msg.sender].name = _name;
@@ -92,7 +94,8 @@ contract FundRaise {
         require(
             keccak256(bytes(_title)) != keccak256(bytes(empty)) &&
                 keccak256(bytes(_desc)) != keccak256(bytes(empty)) &&
-                _targetMoney >= 0
+                _targetMoney >= 0,
+            "PODO: Please input group name, desc, targetmony."
         );
         // 현재 블럭
         uint256 nowBlock = block.number;
@@ -129,13 +132,19 @@ contract FundRaise {
     ) public {
         // 유저 인스턴스 생성
         UserInfo storage user = userInfo[_group][_pid][msg.sender];
-        uint256 nowBlock = block.number;
+        // uint256 nowBlock = block.number;
         // 존재하는 프로젝트인지 확인
-        require(groupInfo[_group].projects.length - 1 >= _pid);
+        require(
+            groupInfo[_group].projects.length - 1 >= _pid,
+            "PODO: Not found group."
+        );
         // 모금이 끝난 프로젝트인지 확인
-        require(groupInfo[_group].projects[_pid].endBlock == nowBlock);
+        // require(
+        //     groupInfo[_group].projects[_pid].endBlock <= nowBlock,
+        //     "PODO: It's not a fundraising period."
+        // );
         // 기부 금액이 0보다 커야함
-        require(_amount > 0);
+        require(_amount > 0, "PODO: The donation amount cannot be zero.");
         // 사용자 정보에 입금한 금액을 추가
         uint256 beforeAmount = user.amount;
         user.amount = beforeAmount.add(_amount);
