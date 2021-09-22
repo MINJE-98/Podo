@@ -32,13 +32,11 @@ contract FundRaise {
     }
     BallotInterface public ballot;
 
-    // 프로젝트 pid에 해당하는 유저 어드래스.
+    // 그룹 주소 -> 프로젝트 pid -> 유저 주소
     mapping(address => mapping(uint256 => mapping(address => UserInfo)))
         public userInfo;
-    // 프로젝트 그룹 정보.
+    // 그룹 주소 -> 그룹 정보
     mapping(address => GroupInfo) public groupInfo;
-
-    // mapping(address => ProjectInfo[]) public projectInfo;
 
     constructor(IERC20 _podo, address _ballot) {
         // 포도 컨트랙트 주입
@@ -139,7 +137,7 @@ contract FundRaise {
     }
 
     /**
-        
+        그룹의 모든 프로젝트 정보를 튜플로 반환합니다.
      */
     function viewGroupProjectsInfo(address _group)
         public
@@ -151,6 +149,9 @@ contract FundRaise {
         // TODO 프론트 이벤트 추가
     }
 
+    /**
+        그룹의 _pid에 해당하는 프로젝트 정보를 튜플로 반환합니다.
+     */
     function viewGroupProjectInfo(address _group, uint256 _pid)
         public
         view
