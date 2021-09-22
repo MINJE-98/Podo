@@ -16,9 +16,9 @@ contract FundRaise {
     }
     // 그룹 정보
     struct GroupInfo {
-        address owner;
         string name;
         string desc;
+        ProjectInfo[] projects;
     }
 
     // 프로젝트
@@ -30,14 +30,15 @@ contract FundRaise {
         uint256 startBlock;
         uint256 endBlock;
     }
-
-    // podoInterface public podo;
-    ProjectInfo[] public projectInfo;
-    GroupInfo[] public groupInfo;
     BallotInterface public ballot;
 
     // 프로젝트 pid에 해당하는 유저 어드래스.
-    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+    mapping(address => mapping(uint256 => mapping(address => UserInfo)))
+        public userInfo;
+    // 프로젝트 그룹 정보.
+    mapping(address => GroupInfo) public groupInfo;
+
+    // mapping(address => ProjectInfo[]) public projectInfo;
 
     constructor(IERC20 _podo, address _ballot) {
         // 포도 컨트랙트 주입
@@ -47,7 +48,10 @@ contract FundRaise {
     }
 
     /**
-        그룹을 생성합니다.
+        그룹을 생성
+
+        **조건
+        _name, _desc가 비어있으면 안됨.
      */
     function createGroup(string memory _name, string memory _desc) public {
         string memory empty = "";
@@ -55,9 +59,9 @@ contract FundRaise {
             keccak256(bytes(_name)) != keccak256(bytes(empty)) &&
                 keccak256(bytes(_desc)) != keccak256(bytes(empty))
         );
-        groupInfo.push(
-            GroupInfo({owner: msg.sender, name: _name, desc: _desc})
-        );
+        // 메서드 호출자의 주소로 그룹을 생성
+        groupInfo[msg.sender].name = _name;
+        groupInfo[msg.sender].desc = _desc;
         // TODO 프론트 이벤트 추가
     }
 
@@ -72,7 +76,7 @@ contract FundRaise {
     function createProject(
         string memory _title,
         string memory _desc,
-        uint256 _targetmoney,
+        uint256 _targetMoney,
         uint256 _startBlock,
         uint256 _endBlock
     ) public {
@@ -80,20 +84,20 @@ contract FundRaise {
         require(
             keccak256(bytes(_title)) != keccak256(bytes(empty)) &&
                 keccak256(bytes(_desc)) != keccak256(bytes(empty)) &&
-                _targetmoney >= 0
+                _targetMoney >= 0
         );
         // 현재 블럭
-        uint256 startBlock = block.number;
+        uint256 nowBlock = block.number;
         // 시작 시간을 정합니다.
-        uint256 start = startBlock.add(_startBlock);
+        uint256 start = nowBlock.add(_startBlock);
         // 끝나는 시간을 정합니다.
         uint256 end = start.add(_endBlock);
         // 프로젝트에 데이터를 삽입
-        projectInfo.push(
+        groupInfo[msg.sender].projects.push(
             ProjectInfo({
                 title: _title,
                 desc: _desc,
-                targetMoney: _targetmoney,
+                targetMoney: _targetMoney,
                 currentMoney: 0,
                 startBlock: start,
                 endBlock: end
@@ -110,14 +114,18 @@ contract FundRaise {
         기부 금액이 0보다 커야함
      */
 
-    function donateToProject(uint256 _pid, uint256 _amount) public {
-        // project[pid]에 해당하는 호출자 주소 정보를 가져옵니다.
-        UserInfo storage user = userInfo[_pid][msg.sender];
+    function donateToProject(
+        address _group,
+        uint256 _pid,
+        uint256 _amount
+    ) public {
+        // 유저 인스턴스 생성
+        UserInfo storage user = userInfo[_group][_pid][msg.sender];
         uint256 nowBlock = block.number;
-        // 사용가능한 프로젝트인지 확인
-        require(projectInfo.length - 1 >= _pid);
+        // 존재하는 프로젝트인지 확인
+        require(groupInfo[_group].projects.length - 1 >= _pid);
         // 모금이 끝난 프로젝트인지 확인
-        require(projectInfo[_pid].endBlock == nowBlock);
+        require(groupInfo[_group].projects[_pid].endBlock == nowBlock);
         // 기부 금액이 0보다 커야함
         require(_amount > 0);
         // 사용자 정보에 입금한 금액을 추가
@@ -131,12 +139,25 @@ contract FundRaise {
     }
 
     /**
-        총 프로젝트 수
+        
      */
-    function countsProject() public view returns (uint256) {
-        uint256 counts = projectInfo.length;
+    function viewGroupProjectsInfo(address _group)
+        public
+        view
+        returns (ProjectInfo[] memory)
+    {
+        ProjectInfo[] memory projects = groupInfo[_group].projects;
+        return projects;
         // TODO 프론트 이벤트 추가
-        return counts;
+    }
+
+    function viewGroupProjectInfo(address _group, uint256 _pid)
+        public
+        view
+        returns (ProjectInfo memory)
+    {
+        return groupInfo[_group].projects[_pid];
+        // TODO 프론트 이벤트 추가
     }
 }
 
