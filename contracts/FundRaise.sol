@@ -10,10 +10,6 @@ contract FundRaise {
     using SafeMath for uint256;
     IERC20 public podo;
 
-    // 유저정보
-    struct UserInfo {
-        uint256 amount;
-    }
     // 그룹 정보
     struct GroupInfo {
         string name;
@@ -32,9 +28,6 @@ contract FundRaise {
     }
     BallotInterface public ballot;
 
-    // 그룹 주소 -> 프로젝트 pid -> 유저 주소
-    mapping(address => mapping(uint256 => mapping(address => UserInfo)))
-        public userInfo;
     // 그룹 주소 -> 그룹 정보
     mapping(address => GroupInfo) public groupInfo;
 
@@ -130,9 +123,6 @@ contract FundRaise {
         uint256 _pid,
         uint256 _amount
     ) public {
-        // 유저 인스턴스 생성
-        UserInfo storage user = userInfo[_group][_pid][msg.sender];
-        // uint256 nowBlock = block.number;
         // 존재하는 프로젝트인지 확인
         require(
             groupInfo[_group].projects.length - 1 >= _pid,
@@ -145,9 +135,6 @@ contract FundRaise {
         // );
         // 기부 금액이 0보다 커야함
         require(_amount > 0, "PODO: The donation amount cannot be zero.");
-        // 사용자 정보에 입금한 금액을 추가
-        uint256 beforeAmount = user.amount;
-        user.amount = beforeAmount.add(_amount);
         // 기부의 금액을 모금 컨트랙트에 전송
         podo.transferFrom(address(msg.sender), address(this), _amount);
         // 기부자에게 투포권을 분배함
