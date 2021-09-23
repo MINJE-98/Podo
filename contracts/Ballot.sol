@@ -23,8 +23,8 @@ contract Ballot is ERC20("Ballot", "BALLOT") {
     }
 
     // 컨트랙트 주인 설정
-    function setOwner() public onlyOwner {
-        owner = msg.sender;
+    function setOwner(address _to) public onlyOwner {
+        owner = _to;
     }
 
     // 투표권을 생성
