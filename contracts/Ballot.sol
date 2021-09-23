@@ -29,4 +29,21 @@ contract Vote is ERC20("Vote", "VOTE") {
     function mint(address _to, uint256 _amount) external {
         _mint(_to, _amount);
     }
+
+    /**
+        유저의 투표권을 저장
+     */
+    function setUserBallotAmount(
+        address _group,
+        uint256 _pid,
+        uint256 _amount
+    ) external {
+        // 유저 인스턴스 생성
+        UserInfo storage user = userInfo[_group][_pid][msg.sender];
+        // 이전 유저의 기부금액
+        uint256 beforeAmount = user.amount;
+        // 새로운 유저 기부금액 삽입
+        user.amount = beforeAmount.add(_amount);
+        // TODO 프론트 이벤트 추가
+    }
 }
