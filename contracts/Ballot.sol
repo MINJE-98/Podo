@@ -31,6 +31,20 @@ contract Vote is ERC20("Vote", "VOTE") {
     }
 
     /**
+        유저의 투표 가능한 투표권
+     */
+    function getUserCurrentBallot(address _group, uint256 _pid)
+        public
+        view
+        returns (UserInfo memory)
+    {
+        // 유저 인스턴스 생성
+        UserInfo storage user = userInfo[_group][_pid][msg.sender];
+        // 유저 정보 반환
+        return user;
+    }
+
+    /**
         유저의 투표권을 저장
      */
     function setUserBallotAmount(
