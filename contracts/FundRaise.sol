@@ -138,7 +138,7 @@ contract FundRaise {
         // 기부의 금액을 모금 컨트랙트에 전송
         podo.transferFrom(address(msg.sender), address(this), _amount);
         // 기부자에게 투포권을 분배함
-        ballot.mint(address(msg.sender), _amount);
+        ballot.mint(_group, _pid, address(msg.sender), _amount);
         // TODO 프론트 이벤트 추가
     }
 
@@ -169,5 +169,10 @@ contract FundRaise {
 }
 
 interface BallotInterface {
-    function mint(address _to, uint256 _amount) external;
+    function mint(
+        address _group,
+        uint256 _pid,
+        address _to,
+        uint256 _amount
+    ) external;
 }
