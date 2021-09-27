@@ -26,4 +26,32 @@ contract("FundRaise", ([alice, bob, carol, dev]) => {
         await podo.approve(fundRaise.address, '100000000000000000000000000000000000', {from: dev});
         await ballot.approve(fundRaise.address, '100000000000000000000000000000000000', {from: dev});
     });
+
+    /**
+     * 그룹 생성
+     */
+    // alice의 주소로 팀이 제대로 생성되는지?
+    it('should created A group of alice', async ()=> {
+        // alice가 그룹을 생성합니다.
+        await fundRaise.createGroup("alice", "i'm alice",{ from: alice});
+        // 생성한 그룹 변수에 저장
+        const result = await fundRaise.groupInfo(alice);
+        // 테스트 시작
+        assert(result.name === "alice");
+        assert(result.desc === "i'm alice");
+    })
+    // 서로가 생성한 그룹이 매핑 되어있는지?
+    it('Should created each groups', async ()=> {
+        // alice와 bob이 자신의 그룹을 생성합니다.
+        await fundRaise.createGroup("alice", "i'm alice",{ from: alice});
+        await fundRaise.createGroup("bob", "i'm bob",{ from: bob});
+        // 생성한 그룹 변수에 저장
+        const aliceResult = await fundRaise.groupInfo(alice);
+        const bobResult = await fundRaise.groupInfo(bob);
+        // 테스트 시작
+        assert(aliceResult.name === "alice");
+        assert(aliceResult.desc === "i'm alice");
+        assert(bobResult.name === "bob");
+        assert(bobResult.desc === "i'm bob");
+    })
 });
