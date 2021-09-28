@@ -3,8 +3,10 @@
 pragma solidity ^0.8.0;
 
 import "./openzeppelin/IERC20.sol";
+import "./openzeppelin/SafeMath.sol";
 
 contract Governor {
+    using SafeMath for uint256;
     bytes32 public empty = keccak256(bytes(""));
     IERC20 public podo;
     IERC20 public ballot;
@@ -47,10 +49,46 @@ contract Governor {
         fundRaise = FunRaiseInterface(_fundRaise);
     }
 
+    modifier onlyGroupOwner() {
+        // TODO 호출자가 그룹이 있는지 확인
+        _;
+    }
+
     /**
         제안 생성
+
+        **조건
+        _title, _desc는 비어있으면 안됨
+        _pid에 해당하는 프로젝트가 존재해야함.
      */
-    function propose() public {}
+    function propose(
+        uint256 _pid,
+        string memory _title,
+        string memory _desc
+    ) public {
+        //  _title, _desc는 비어있으면 안됨
+        require(
+            keccak256(bytes(_title)) != empty &&
+                keccak256(bytes(_desc)) != empty,
+            "PODO: Please input group name, desc."
+        );
+        // TODO _pid에 해당하는 프로젝트가 존재해야함.
+        // 현재 블럭
+        uint256 nowBlcok = block.number;
+        // 종료 블럭
+        uint256 endBlock = nowBlcok.add(10000);
+        // 호출자의 _pid에 해당하는 propsal 인스턴스 생성
+        Proposal storage prop = proposal[msg.sender][_pid];
+        // 데이터 삽입
+        prop.title = _title;
+        prop.desc = _desc;
+        prop.forVotes = 0;
+        prop.againstVotes = 0;
+        prop.startBlock = nowBlcok;
+        prop.endBlock = endBlock;
+        prop.executed = false;
+        prop.canceled = false;
+    }
 
     /**
         제안 상태 보기
@@ -74,5 +112,5 @@ contract Governor {
 }
 
 interface FunRaiseInterface {
-    function hasGorup() external;
+    function viewGroupProjectInfo(address _group, uint256 _pid) external;
 }
