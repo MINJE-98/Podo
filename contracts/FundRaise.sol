@@ -9,6 +9,7 @@ pragma solidity ^0.8.0;
 contract FundRaise {
     using SafeMath for uint256;
     IERC20 public podo;
+    bytes32 public empty = keccak256(bytes(""));
 
     // 그룹 정보
     struct GroupInfo {
@@ -40,10 +41,8 @@ contract FundRaise {
 
     // 그룹을 가지고있는 사용자만 프로젝트를 생성할 수 있습니다.
     modifier onlyGroupOwner() {
-        string memory empty = "";
         require(
-            keccak256(bytes(groupInfo[msg.sender].name)) !=
-                keccak256(bytes(empty)),
+            keccak256(bytes(groupInfo[msg.sender].name)) != empty,
             "PODO: You don't have a group."
         );
         _;
@@ -56,10 +55,9 @@ contract FundRaise {
         _name, _desc가 비어있으면 안됨.
      */
     function createGroup(string memory _name, string memory _desc) public {
-        string memory empty = "";
         require(
-            keccak256(bytes(_name)) != keccak256(bytes(empty)) &&
-                keccak256(bytes(_desc)) != keccak256(bytes(empty)),
+            keccak256(bytes(_name)) != empty &&
+                keccak256(bytes(_desc)) != empty,
             "PODO: Please input group name, desc."
         );
         // 메서드 호출자의 주소로 그룹을 생성
@@ -83,10 +81,9 @@ contract FundRaise {
         uint256 _startBlock,
         uint256 _endBlock
     ) public {
-        string memory empty = "";
         require(
-            keccak256(bytes(_title)) != keccak256(bytes(empty)) &&
-                keccak256(bytes(_desc)) != keccak256(bytes(empty)) &&
+            keccak256(bytes(_title)) != empty &&
+                keccak256(bytes(_desc)) != empty &&
                 _targetMoney >= 0,
             "PODO: Please input group name, desc, targetmony."
         );
