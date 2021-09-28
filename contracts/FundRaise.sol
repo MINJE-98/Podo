@@ -32,11 +32,11 @@ contract FundRaise {
     // 그룹 주소 -> 그룹 정보
     mapping(address => GroupInfo) public groupInfo;
 
-    constructor(IERC20 _podo, address _ballot) {
+    constructor(IERC20 _podo, BallotInterface _ballot) {
         // 포도 컨트랙트 주입
         podo = _podo;
         // 투표 컨트랙트 주입
-        ballot = BallotInterface(_ballot);
+        ballot = _ballot;
     }
 
     // 그룹을 가지고있는 사용자만 프로젝트를 생성할 수 있습니다.
@@ -108,12 +108,12 @@ contract FundRaise {
     }
 
     /**
-        후원자들이 프로젝트에 기부
+            후원자들이 프로젝트에 기부
 
-        **조건
-        프로젝트가 존재해야함
-        기부 금액이 0보다 커야함
-     */
+            **조건
+            프로젝트가 존재해야함
+            기부 금액이 0보다 커야함
+         */
 
     function donateToProject(
         address _group,
@@ -142,8 +142,8 @@ contract FundRaise {
     }
 
     /**
-        그룹의 모든 프로젝트 정보를 튜플로 반환합니다.
-     */
+            그룹의 모든 프로젝트 정보를 튜플로 반환합니다.
+         */
     function viewGroupProjectsInfo(address _group)
         public
         view
@@ -155,8 +155,8 @@ contract FundRaise {
     }
 
     /**
-        그룹의 _pid에 해당하는 프로젝트 정보를 튜플로 반환합니다.
-     */
+            그룹의 _pid에 해당하는 프로젝트 정보를 튜플로 반환합니다.
+         */
     function viewGroupProjectInfo(address _group, uint256 _pid)
         public
         view

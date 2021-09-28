@@ -5,8 +5,9 @@ import "./openzeppelin/IERC20.sol";
 import "./openzeppelin/ERC20.sol";
 import "./openzeppelin/SafeMath.sol";
 
-contract Vote is ERC20("Vote", "VOTE") {
+contract Ballot is ERC20("Ballot", "BALLOT") {
     using SafeMath for uint256;
+    address public owner;
     // 유저정보
     struct UserInfo {
         uint256 amount;
@@ -15,8 +16,33 @@ contract Vote is ERC20("Vote", "VOTE") {
     mapping(address => mapping(uint256 => mapping(address => UserInfo)))
         public userInfo;
 
-    function mint(address _to, uint256 _amount) external {
+    // 호출자의 주소 확인
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+    // 컨트랙트 주인 설정
+    function setOwner(address _to) public onlyOwner {
+        owner = _to;
+    }
+
+    // 투표권을 생성
+    function mint(
+        address _group,
+        uint256 _pid,
+        address _to,
+        uint256 _amount
+    ) external onlyOwner {
+        // 유저 인스턴스 생성
+        UserInfo storage user = userInfo[_group][_pid][_to];
+        // 이전 유저의 기부금액
+        uint256 beforeAmount = user.amount;
+        // 새로운 유저 기부금액 삽입
+        user.amount = beforeAmount.add(_amount);
+        // 투표권 생성
         _mint(_to, _amount);
+        // TODO 프론트 이벤트 추가
     }
 
     /**
@@ -31,22 +57,5 @@ contract Vote is ERC20("Vote", "VOTE") {
         UserInfo storage user = userInfo[_group][_pid][msg.sender];
         // 유저 정보 반환
         return user;
-    }
-
-    /**
-        유저의 투표권을 저장
-     */
-    function setUserBallotAmount(
-        address _group,
-        uint256 _pid,
-        uint256 _amount
-    ) external {
-        // 유저 인스턴스 생성
-        UserInfo storage user = userInfo[_group][_pid][msg.sender];
-        // 이전 유저의 기부금액
-        uint256 beforeAmount = user.amount;
-        // 새로운 유저 기부금액 삽입
-        user.amount = beforeAmount.add(_amount);
-        // TODO 프론트 이벤트 추가
     }
 }
