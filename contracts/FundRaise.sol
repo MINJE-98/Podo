@@ -137,6 +137,8 @@ contract FundRaise {
         require(_amount > 0, "PODO: The donation amount cannot be zero.");
         // 기부의 금액을 모금 컨트랙트에 전송
         podo.transferFrom(address(msg.sender), address(this), _amount);
+        // 기부 받은 포도수 만큼 currentMoney에 추가시켜줌
+        groupInfo[_group].projects[_pid].currentMoney += _amount;
         // 기부자에게 투포권을 분배함
         ballot.mint(_group, _pid, address(msg.sender), _amount);
         // TODO 프론트 이벤트 추가
