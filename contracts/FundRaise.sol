@@ -165,6 +165,17 @@ contract FundRaise {
         return groupInfo[_group].projects[_pid];
         // TODO 프론트 이벤트 추가
     }
+
+    /**
+        호출하는 주소가 그룹을 가지고있는지
+     */
+    function hasGroup() public view returns (bool) {
+        GroupInfo memory group = groupInfo[msg.sender];
+        if (keccak256(bytes(group.name)) != empty) {
+            return true;
+        }
+        return false;
+    }
 }
 
 interface BallotInterface {
