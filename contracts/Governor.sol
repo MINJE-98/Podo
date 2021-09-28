@@ -74,20 +74,23 @@ contract Governor {
         );
         // TODO _pid에 해당하는 프로젝트가 존재해야함.
         // 현재 블럭
-        uint256 nowBlcok = block.number;
+        uint256 startBlock = block.number;
         // 종료 블럭
-        uint256 endBlock = nowBlcok.add(10000);
-        // 호출자의 _pid에 해당하는 propsal 인스턴스 생성
-        Proposal storage prop = proposal[msg.sender][_pid];
-        // 데이터 삽입
-        prop.title = _title;
-        prop.desc = _desc;
-        prop.forVotes = 0;
-        prop.againstVotes = 0;
-        prop.startBlock = nowBlcok;
-        prop.endBlock = endBlock;
-        prop.executed = false;
-        prop.canceled = false;
+        uint256 endBlock = startBlock.add(10000);
+        //  newpropsal 인스턴스 생성
+        Proposal memory newProposal = Proposal({
+            title: _title,
+            desc: _desc,
+            forVotes: 0,
+            againstVotes: 0,
+            startBlock: startBlock,
+            endBlock: endBlock,
+            executed: false,
+            canceled: false
+        });
+        // 호출자 그룹 -> project_pid에 새로운 제안을 추가
+        proposal[msg.sender][_pid] = newProposal;
+        // TODO 프론트 이벤트 추가
     }
 
     /**
