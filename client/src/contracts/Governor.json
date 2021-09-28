@@ -1,0 +1,117 @@
+{
+  "contractName": "Governor",
+  "abi": [],
+  "metadata": "{\"compiler\":{\"version\":\"0.8.4+commit.c7e474f2\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/Governor.sol\":\"Governor\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/Governor.sol\":{\"keccak256\":\"0xbf06451f5650790f33468073090b187a279d787bd77e825e6ac3c59229ad8dc4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://83988ac60161fe6bcf78a0916eb947af067957e8eb3c5831c714c6b4c82b0abd\",\"dweb:/ipfs/Qmdevg1ZCg9VTEpZKDQXsSDmh6LhuifUc2iARPHCwEuNv2\"]}},\"version\":1}",
+  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea264697066735822122005f5d42ef882efd84779c9120bf9ea8da4597aac3a201eddf9e328b6104f946564736f6c63430008040033",
+  "deployedBytecode": "0x6080604052600080fdfea264697066735822122005f5d42ef882efd84779c9120bf9ea8da4597aac3a201eddf9e328b6104f946564736f6c63430008040033",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "58:20:2:-:0;;;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "58:20:2:-:0;;;;;",
+  "source": "// SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.0;\n\ncontract Governor {}\n",
+  "sourcePath": "/Users/minje/Desktop/recat/contracts/Governor.sol",
+  "ast": {
+    "absolutePath": "project:/contracts/Governor.sol",
+    "exportedSymbols": {
+      "Governor": [
+        474
+      ]
+    },
+    "id": 475,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 473,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "33:23:2"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "id": 474,
+        "linearizedBaseContracts": [
+          474
+        ],
+        "name": "Governor",
+        "nameLocation": "67:8:2",
+        "nodeType": "ContractDefinition",
+        "nodes": [],
+        "scope": 475,
+        "src": "58:20:2",
+        "usedErrors": []
+      }
+    ],
+    "src": "33:46:2"
+  },
+  "legacyAST": {
+    "absolutePath": "project:/contracts/Governor.sol",
+    "exportedSymbols": {
+      "Governor": [
+        474
+      ]
+    },
+    "id": 475,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 473,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "33:23:2"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "id": 474,
+        "linearizedBaseContracts": [
+          474
+        ],
+        "name": "Governor",
+        "nameLocation": "67:8:2",
+        "nodeType": "ContractDefinition",
+        "nodes": [],
+        "scope": 475,
+        "src": "58:20:2",
+        "usedErrors": []
+      }
+    ],
+    "src": "33:46:2"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.8.4+commit.c7e474f2.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.4.3",
+  "updatedAt": "2021-09-23T09:49:59.621Z",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  }
+}
