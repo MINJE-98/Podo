@@ -9,6 +9,7 @@ pragma solidity ^0.8.0;
 contract FundRaise {
     using SafeMath for uint256;
     IERC20 public podo;
+    bytes32 public empty = keccak256(bytes(""));
 
     // 그룹 정보
     struct GroupInfo {
@@ -39,11 +40,13 @@ contract FundRaise {
     }
 
     // 그룹을 가지고있는 사용자만 프로젝트를 생성할 수 있습니다.
-    // modifier onlyGroupOwner() {
-    //     string memory empty = "";
-    //     require(groupInfo[msg.sender], "PODO: You don't have a group.");
-    //     _;
-    // }
+    modifier onlyGroupOwner() {
+        require(
+            keccak256(bytes(groupInfo[msg.sender].name)) != empty,
+            "PODO: You don't have a group."
+        );
+        _;
+    }
 
     /**
         그룹을 생성
@@ -52,10 +55,9 @@ contract FundRaise {
         _name, _desc가 비어있으면 안됨.
      */
     function createGroup(string memory _name, string memory _desc) public {
-        string memory empty = "";
         require(
-            keccak256(bytes(_name)) != keccak256(bytes(empty)) &&
-                keccak256(bytes(_desc)) != keccak256(bytes(empty)),
+            keccak256(bytes(_name)) != empty &&
+                keccak256(bytes(_desc)) != empty,
             "PODO: Please input group name, desc."
         );
         // 메서드 호출자의 주소로 그룹을 생성
@@ -79,10 +81,9 @@ contract FundRaise {
         uint256 _startBlock,
         uint256 _endBlock
     ) public {
-        string memory empty = "";
         require(
-            keccak256(bytes(_title)) != keccak256(bytes(empty)) &&
-                keccak256(bytes(_desc)) != keccak256(bytes(empty)) &&
+            keccak256(bytes(_title)) != empty &&
+                keccak256(bytes(_desc)) != empty &&
                 _targetMoney >= 0,
             "PODO: Please input group name, desc, targetmony."
         );
@@ -133,6 +134,8 @@ contract FundRaise {
         require(_amount > 0, "PODO: The donation amount cannot be zero.");
         // 기부의 금액을 모금 컨트랙트에 전송
         podo.transferFrom(address(msg.sender), address(this), _amount);
+        // 기부 받은 포도수 만큼 currentMoney에 추가시켜줌
+        groupInfo[_group].projects[_pid].currentMoney += _amount;
         // 기부자에게 투포권을 분배함
         ballot.mint(_group, _pid, address(msg.sender), _amount);
         // TODO 프론트 이벤트 추가
