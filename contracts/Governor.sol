@@ -7,19 +7,38 @@ import "./openzeppelin/SafeMath.sol";
 
 contract Governor {
     using SafeMath for uint256;
+
     bytes32 public empty = keccak256(bytes(""));
     IERC20 public podo;
     IERC20 public ballot;
-    FunRaiseInterface public fundRaise;
 
+    FunRaiseInterface public fundRaise;
+    TimelockInterface public timelock;
+
+    // 투표 딜레이
+    function votingDelay() public pure returns (uint256) {
+        return 1;
+    } // 1 block
+
+    // 투표 기간
+    function votingPeriod() public pure returns (uint256) {
+        return 17280;
+    } // ~3 days in blocks (assuming 15s blocks)
+
+    /**
+        제안 WorkFlow
+        제안 -> 투표 -> 성공 -> 큐 -> 트랜잭션
+     */
     // 제안 정보
     struct Proposal {
         string title;
         string desc;
+        // 제안이 성공 했을때 실행하는 타임스탬프
+        uint256 eta;
         uint256 forVotes;
         uint256 againstVotes;
-        uint256 startBlock;
-        uint256 endBlock;
+        uint256 voteStart;
+        uint256 voteEnd;
         bool executed;
         bool canceled;
     }
@@ -36,17 +55,19 @@ contract Governor {
     }
 
     // 그룹 주소 -> 프로젝트 pid -> 제안
-    mapping(address => mapping(uint256 => Proposal)) proposal;
+    mapping(address => mapping(uint256 => Proposal)) proposals;
 
     //  컨태랙트 주입
     constructor(
         IERC20 _podo,
         IERC20 _ballot,
-        address _fundRaise
+        address _fundRaise,
+        address _timelock
     ) {
         podo = _podo;
         ballot = _ballot;
         fundRaise = FunRaiseInterface(_fundRaise);
+        timelock = TimelockInterface(_timelock);
     }
 
     modifier onlyGroupOwner() {
@@ -73,30 +94,73 @@ contract Governor {
             "PODO: Please input group name, desc."
         );
         // TODO _pid에 해당하는 프로젝트가 존재해야함.
+
         // 현재 블럭
-        uint256 startBlock = block.number;
+        uint256 startBlock = block.number.add(votingDelay());
         // 종료 블럭
-        uint256 endBlock = startBlock.add(10000);
+        uint256 endBlock = startBlock.add(votingPeriod());
+
         //  newpropsal 인스턴스 생성
         Proposal memory newProposal = Proposal({
             title: _title,
             desc: _desc,
+            eta: 0,
             forVotes: 0,
             againstVotes: 0,
-            startBlock: startBlock,
-            endBlock: endBlock,
+            voteStart: startBlock,
+            voteEnd: endBlock,
             executed: false,
             canceled: false
         });
         // 호출자 그룹 -> project_pid에 새로운 제안을 추가
-        proposal[msg.sender][_pid] = newProposal;
+        proposals[msg.sender][_pid] = newProposal;
         // TODO 프론트 이벤트 추가
     }
 
     /**
         제안 상태 보기
      */
-    function state() public {}
+    function state(address _group, uint256 _pid)
+        public
+        view
+        returns (ProposalState)
+    {
+        // 그룹 주소 -> 프로젝트 _pid 인스턴스 생성
+        Proposal storage proposal = proposals[_group][_pid];
+        // 제안이 취소됨
+        if (proposal.canceled) {
+            return ProposalState.Canceled;
+        }
+        // 투표 시작전
+        else if (block.number <= proposal.voteStart) {
+            return ProposalState.Pending;
+        }
+        // 투표 시작
+        else if (block.number <= proposal.voteEnd) {
+            return ProposalState.Active;
+        }
+        // 투표 결과 (찬 <= 반 반대가 크거나 같을 경우 패배)
+        else if (proposal.forVotes <= proposal.againstVotes) {
+            return ProposalState.Defeated;
+        }
+        // 투표가 완료되고, 그룹이 제안한 금액 지급
+        else if (proposal.eta == 0) {
+            return ProposalState.Succeeded;
+        }
+        // 투표 결과
+        else if (proposal.executed) {
+            return ProposalState.Executed;
+        }
+        // 조건 기간보다 현재 블럭이 크다면 기간 만료
+        else if (block.timestamp >= proposal.eta.add(timelock.GRACE_PERIOD())) {
+            return ProposalState.Expired;
+        }
+        // 큐에서 판단중
+        else {
+            return ProposalState.Queued;
+        }
+        // TODO 프론트 이벤트 추가
+    }
 
     /**
         통과
@@ -109,7 +173,7 @@ contract Governor {
     function cancel() public {}
 
     /**
-        부결
+        투표
      */
     function castVote() public {}
 }
