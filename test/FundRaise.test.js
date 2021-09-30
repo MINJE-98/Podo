@@ -11,7 +11,7 @@ contract("FundRaise", ([alice, bob, carol, dev]) => {
      * bob : 그룹 관리자
      * carol : 기부자
      * dev : 개발자
-     * 1 = 100000000000000000
+     * 1 PODO = 100000000000000000
      */
     before(async () => {
         // 개발자가 컨트랙트 배포
@@ -22,9 +22,13 @@ contract("FundRaise", ([alice, bob, carol, dev]) => {
         await podo.mint(alice, '10000000000000000000', {from: dev});
         await podo.mint(bob, '10000000000000000000', {from: dev});
         await podo.mint(carol, '10000000000000000000', {from: dev});
-        // fundRaise를 approve하기
-        await podo.approve(fundRaise.address, '100000000000000000000000000000000000', {from: dev});
-        await ballot.approve(fundRaise.address, '100000000000000000000000000000000000', {from: dev});
+        // 각 유저별로 fundRaise approve
+        await podo.approve(fundRaise.address, '100000000000000000000000000000000000', {from: alice});
+        await ballot.approve(fundRaise.address, '100000000000000000000000000000000000', {from: alice});
+        await podo.approve(fundRaise.address, '100000000000000000000000000000000000', {from: bob});
+        await ballot.approve(fundRaise.address, '100000000000000000000000000000000000', {from: bob});
+        await podo.approve(fundRaise.address, '100000000000000000000000000000000000', {from: carol});
+        await ballot.approve(fundRaise.address, '100000000000000000000000000000000000', {from: carol});
     });
 
     /**
@@ -83,4 +87,20 @@ contract("FundRaise", ([alice, bob, carol, dev]) => {
         assert(result[1].desc === "donateAlice 2");
         assert(result[1].targetMoney === "2000000");
     })
+
+    /**
+     * 프로젝트에 기부
+     */
+    it('Should Donate to Project', async ()=>{
+        const onePodo = '100000000000000000';
+        // carol이 0번째 프로젝트에 1개의 포토를 기부함
+        await fundRaise.donateToProject(alice, 0, onePodo, {from: carol});
+        // funRaise 내에서 확인
+        const resultProject = await fundRaise.viewGroupProjectsInfo(alice);
+        assert(resultProject[0].currentMoney === onePodo);
+        // ballot 내에서 확인
+        const resultBallot = await ballot.userInfo(alice, 0, carol);
+        assert(resultBallot.donateAmount.toString() === onePodo);
+    });
+    
 });
