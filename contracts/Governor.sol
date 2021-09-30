@@ -10,10 +10,10 @@ contract Governor {
 
     bytes32 public empty = keccak256(bytes(""));
     IERC20 public podo;
-    IERC20 public ballot;
 
     FunRaiseInterface public fundRaise;
     TimelockInterface public timelock;
+    BallotInterface public ballot;
 
     // 투표 딜레이
     function votingDelay() public pure returns (uint256) {
@@ -41,6 +41,7 @@ contract Governor {
         uint256 voteEnd;
         bool executed;
         bool canceled;
+        mapping(address => Receipt) receipts;
     }
     // 제안 상태
     enum ProposalState {
@@ -53,19 +54,33 @@ contract Governor {
         Expired,
         Executed
     }
-
+    // 투표 정보
+    struct Receipt {
+        // 해당 유저가 투표를 했는지?
+        bool hasVoted;
+        bool support;
+        uint256 votes;
+        string reason;
+    }
+    // 투표자 정보
+    struct VoterInfo {
+        address voter;
+    }
     // 그룹 주소 -> 프로젝트 pid -> 제안
     mapping(address => mapping(uint256 => Proposal)) proposals;
+
+    // 투표자 매핑
+    mapping(address => mapping(uint256 => VoterInfo[])) voterInfo;
 
     //  컨태랙트 주입
     constructor(
         IERC20 _podo,
-        IERC20 _ballot,
+        address _ballot,
         address _fundRaise,
         address _timelock
     ) {
         podo = _podo;
-        ballot = _ballot;
+        ballot = BallotInterface(_ballot);
         fundRaise = FunRaiseInterface(_fundRaise);
         timelock = TimelockInterface(_timelock);
     }
@@ -101,19 +116,17 @@ contract Governor {
         uint256 endBlock = startBlock.add(votingPeriod());
 
         //  newpropsal 인스턴스 생성
-        Proposal memory newProposal = Proposal({
-            title: _title,
-            desc: _desc,
-            eta: 0,
-            forVotes: 0,
-            againstVotes: 0,
-            voteStart: startBlock,
-            voteEnd: endBlock,
-            executed: false,
-            canceled: false
-        });
-        // 호출자 그룹 -> project_pid에 새로운 제안을 추가
-        proposals[msg.sender][_pid] = newProposal;
+        Proposal storage newProposal = proposals[msg.sender][_pid];
+        // 새로운 제안 추가
+        newProposal.title = _title;
+        newProposal.desc = _desc;
+        newProposal.eta = 0;
+        newProposal.forVotes = 0;
+        newProposal.againstVotes = 0;
+        newProposal.voteStart = startBlock;
+        newProposal.voteEnd = endBlock;
+        newProposal.executed = false;
+        newProposal.canceled = false;
         // TODO 프론트 이벤트 추가
     }
 
@@ -174,8 +187,35 @@ contract Governor {
 
     /**
         투표
+        
+        **조건
+        가지고 있는 투표수보다 많이 투표하는 경우
+        투표권이 없는 경우
+
      */
-    function castVote() public {}
+    function castVote(
+        address _voter,
+        address _group,
+        uint256 _pid,
+        uint256 _amount,
+        string memory reason,
+        bool support
+    ) public {
+        // 투표할 제안 인스턴스 생성
+        Proposal storage proposal = proposals[_group][_pid];
+        // 투표자의 투표 정보 인스턴스 생성
+        Receipt storage receipt = proposal.receipts[_voter];
+        // 투표자 리스트에 새로운 투표자 추가
+        voterInfo[_group][_pid].push(VoterInfo({voter: _voter}));
+        // 투표자가 자의 투표권을 이용해 투표
+        receipt.hasVoted = true;
+        receipt.reason = reason;
+        receipt.support = support;
+        receipt.votes = _amount;
+        // ballot의 정부 수정
+        ballot.voteToProject(_group, _pid, _amount);
+        // TODO 프론트 이벤트 추가
+    }
 }
 
 interface TimelockInterface {
@@ -214,4 +254,12 @@ interface TimelockInterface {
 
 interface FunRaiseInterface {
     function viewGroupProjectInfo(address _group, uint256 _pid) external;
+}
+
+interface BallotInterface {
+    function voteToProject(
+        address _group,
+        uint256 _pid,
+        uint256 _amount
+    ) external returns (uint256);
 }
