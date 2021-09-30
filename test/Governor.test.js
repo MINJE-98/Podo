@@ -38,6 +38,8 @@ contract("Governor", ([alice, bob, carol, dev]) => {
     });
     /**
      * 제안 생성
+     * 
+     * 제안 생성은 FundRaise가 끝이나야 가능함.
      */
     it('Should created proposal', async ()=>{
         // alice가 그룹을 생성합니다.
@@ -51,5 +53,17 @@ contract("Governor", ([alice, bob, carol, dev]) => {
         // 테스트 시작
         assert(result[0].toString() === "propose 1");
         assert(result[1].toString() === "desc 1");
+    })
+    /**
+     * 제안에 투표하기
+     *         address _voter,
+        address _group,
+        uint256 _pid,
+        uint256 _amount,
+        string memory reason,
+        bool support
+     */
+    it('Should vote to proposal', async ()=> {
+        await governor.castVote();
     })
 });
