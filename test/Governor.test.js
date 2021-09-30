@@ -36,5 +36,20 @@ contract("Governor", ([alice, bob, carol, dev]) => {
         await podo.approve(fundRaise.address, '100000000000000000000000000000000000', {from: carol});
         await ballot.approve(fundRaise.address, '100000000000000000000000000000000000', {from: carol});
     });
-    
+    /**
+     * 제안 생성
+     */
+    it('Should created proposal', async ()=>{
+        // alice가 그룹을 생성합니다.
+        await fundRaise.createGroup("Mygroup", "desc....",{ from: alice});
+        // alice의 모금 프로젝트 생성
+        await fundRaise.createProject("aliceDonate 1", "donateAlice 1", 10000, 0, 10);
+        // alice가 모금된 금액에 대해 제안서를 작성합니다
+        await governor.propose(0, "propose 1", "desc 1");
+        // 등록된 제안 가져오기
+        const result = await governor.proposals(alice, 0);
+        // 테스트 시작
+        assert(result[0].toString() === "propose 1");
+        assert(result[1].toString() === "desc 1");
+    })
 });
