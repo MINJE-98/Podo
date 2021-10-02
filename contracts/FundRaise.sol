@@ -3,15 +3,16 @@
 import "./openzeppelin/SafeMath.sol";
 import "./openzeppelin/ERC20.sol";
 import "./openzeppelin/IERC20.sol";
+import "./Podo.sol";
 
 pragma solidity ^0.8.0;
 
-contract FundRaise {
+contract FundRaise is Podo {
     using SafeMath for uint256;
 
+    BallotInterface public ballot;
     IERC20 public podo;
     bytes32 public empty = keccak256(bytes(""));
-    BallotInterface public ballot;
 
     // 그룹 정보
     struct GroupInfo {
