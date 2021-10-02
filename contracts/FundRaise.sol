@@ -4,14 +4,15 @@ import "./openzeppelin/SafeMath.sol";
 import "./openzeppelin/ERC20.sol";
 import "./openzeppelin/IERC20.sol";
 import "./Podo.sol";
+import "./Ballot.sol";
 
 pragma solidity ^0.8.0;
 
-contract FundRaise is Podo {
+contract FundRaise is Ownable {
     using SafeMath for uint256;
 
-    BallotInterface public ballot;
-    IERC20 public podo;
+    Ballot public ballot;
+    Podo public podo;
     bytes32 public empty = keccak256(bytes(""));
 
     // 그룹 정보
@@ -42,7 +43,7 @@ contract FundRaise is Podo {
     // 그룹 주소 -> 그룹 정보
     mapping(address => GroupInfo) public groupInfo;
 
-    constructor(IERC20 _podo, BallotInterface _ballot) {
+    constructor(Podo _podo, Ballot _ballot) {
         // 포도 컨트랙트 주입
         podo = _podo;
         // 투표 컨트랙트 주입
@@ -258,13 +259,4 @@ contract FundRaise is Podo {
         }
         return false;
     }
-}
-
-interface BallotInterface {
-    function mint(
-        address _group,
-        uint256 _projectID,
-        address _to,
-        uint256 _amount
-    ) external;
 }
