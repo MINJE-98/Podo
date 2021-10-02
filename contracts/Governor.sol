@@ -13,12 +13,7 @@ contract Governor {
 
     FunRaiseInterface public fundRaise;
     TimelockInterface public timelock;
-    BallotInterface public ballot;
-
-    // 투표 딜레이
-    function votingDelay() public pure returns (uint256) {
-        return 1;
-    } // 1 block
+    BallotsInterface public ballot;
 
     // 투표 기간
     function votingPeriod() public pure returns (uint256) {
@@ -31,46 +26,38 @@ contract Governor {
      */
     // 제안 정보
     struct Proposal {
-        string title;
-        string desc;
-        // 제안이 성공 했을때 실행하는 타임스탬프
-        uint256 eta;
+        string proposalTitle;
+        string proposalDesc;
+        uint256 proposeAmount;
         uint256 forVotes;
         uint256 againstVotes;
         uint256 voteStart;
         uint256 voteEnd;
         bool executed;
         bool canceled;
-        mapping(address => Receipt) receipts;
     }
-    // 제안 상태
-    enum ProposalState {
-        Pending,
-        Active,
-        Canceled,
-        Defeated,
-        Succeeded,
-        Queued,
-        Expired,
-        Executed
-    }
-    // 투표 정보
-    struct Receipt {
-        // 해당 유저가 투표를 했는지?
+    // 투표자 정보
+    struct VoterInfo {
+        address voter;
         bool hasVoted;
         bool support;
         uint256 votes;
         string reason;
     }
-    // 투표자 정보
-    struct VoterInfo {
-        address voter;
+    // 제안 상태
+    enum ProposalState {
+        Active,
+        Canceled,
+        Defeated,
+        Succeeded,
+        Executed
     }
+
     // 그룹 주소 -> 프로젝트 pid -> 제안
-    mapping(address => mapping(uint256 => Proposal)) proposals;
+    mapping(address => mapping(uint256 => Proposal)) public proposals;
 
     // 투표자 매핑
-    mapping(address => mapping(uint256 => VoterInfo[])) voterInfo;
+    mapping(address => mapping(uint256 => VoterInfo[])) public voterInfo;
 
     //  컨태랙트 주입
     constructor(
@@ -80,7 +67,7 @@ contract Governor {
         address _timelock
     ) {
         podo = _podo;
-        ballot = BallotInterface(_ballot);
+        ballot = BallotsInterface(_ballot);
         fundRaise = FunRaiseInterface(_fundRaise);
         timelock = TimelockInterface(_timelock);
     }
@@ -95,32 +82,43 @@ contract Governor {
 
         **조건
         _title, _desc는 비어있으면 안됨
-        _pid에 해당하는 프로젝트가 존재해야함.
+        _projectID에 해당하는 프로젝트가 존재해야함.
+        모금활동이 끝난 상태이여야 한다.
      */
-    function propose(
-        uint256 _pid,
+    function creatPropose(
+        uint256 _projectID,
         string memory _title,
         string memory _desc
     ) public {
+        // _projectID에 해당하는 프로젝트가 존재해야함.
+        require(
+            fundRaise.hasProject(address(msg.sender), _projectID) == true,
+            "PODO: Not found project."
+        );
+
         //  _title, _desc는 비어있으면 안됨
         require(
             keccak256(bytes(_title)) != empty &&
                 keccak256(bytes(_desc)) != empty,
             "PODO: Please input group name, desc."
         );
-        // TODO _pid에 해당하는 프로젝트가 존재해야함.
+
+        // 모금이 끝난 프로젝트인지 확인
+        require(
+            fundRaise.isProjectEnd(address(msg.sender), _projectID) == true,
+            "PODO: Project is active."
+        );
 
         // 현재 블럭
-        uint256 startBlock = block.number.add(votingDelay());
+        uint256 startBlock = block.number;
         // 종료 블럭
         uint256 endBlock = startBlock.add(votingPeriod());
 
         //  newpropsal 인스턴스 생성
-        Proposal storage newProposal = proposals[msg.sender][_pid];
+        Proposal storage newProposal = proposals[msg.sender][_projectID];
         // 새로운 제안 추가
-        newProposal.title = _title;
-        newProposal.desc = _desc;
-        newProposal.eta = 0;
+        newProposal.proposalTitle = _title;
+        newProposal.proposalDesc = _desc;
         newProposal.forVotes = 0;
         newProposal.againstVotes = 0;
         newProposal.voteStart = startBlock;
@@ -133,20 +131,16 @@ contract Governor {
     /**
         제안 상태 보기
      */
-    function state(address _group, uint256 _pid)
+    function state(address _group, uint256 _projectID)
         public
         view
         returns (ProposalState)
     {
-        // 그룹 주소 -> 프로젝트 _pid 인스턴스 생성
-        Proposal storage proposal = proposals[_group][_pid];
+        // 그룹 주소 -> 프로젝트 _projectID 인스턴스 생성
+        Proposal storage proposal = proposals[_group][_projectID];
         // 제안이 취소됨
         if (proposal.canceled) {
             return ProposalState.Canceled;
-        }
-        // 투표 시작전
-        else if (block.number <= proposal.voteStart) {
-            return ProposalState.Pending;
         }
         // 투표 시작
         else if (block.number <= proposal.voteEnd) {
@@ -156,21 +150,9 @@ contract Governor {
         else if (proposal.forVotes <= proposal.againstVotes) {
             return ProposalState.Defeated;
         }
-        // 투표가 완료되고, 그룹이 제안한 금액 지급
-        else if (proposal.eta == 0) {
-            return ProposalState.Succeeded;
-        }
-        // 투표 결과
-        else if (proposal.executed) {
-            return ProposalState.Executed;
-        }
-        // 조건 기간보다 현재 블럭이 크다면 기간 만료
-        else if (block.timestamp >= proposal.eta.add(timelock.GRACE_PERIOD())) {
-            return ProposalState.Expired;
-        }
-        // 큐에서 판단중
+        // 제안한 금액이 그룹에서 전달됨.
         else {
-            return ProposalState.Queued;
+            return ProposalState.Executed;
         }
         // TODO 프론트 이벤트 추가
     }
@@ -181,7 +163,7 @@ contract Governor {
     function execute() public {}
 
     /**
-        부결
+        제안 취소
      */
     function cancel() public {}
 
@@ -189,31 +171,48 @@ contract Governor {
         투표
         
         **조건
+        제안이 존재하지 않는 경우
         가지고 있는 투표수보다 많이 투표하는 경우
         투표권이 없는 경우
-
+        투표가 진행중인 경우
      */
     function castVote(
         address _voter,
         address _group,
-        uint256 _pid,
+        uint256 _projectID,
         uint256 _amount,
         string memory reason,
         bool support
     ) public {
         // 투표할 제안 인스턴스 생성
-        Proposal storage proposal = proposals[_group][_pid];
-        // 투표자의 투표 정보 인스턴스 생성
-        Receipt storage receipt = proposal.receipts[_voter];
-        // 투표자 리스트에 새로운 투표자 추가
-        voterInfo[_group][_pid].push(VoterInfo({voter: _voter}));
-        // 투표자가 자의 투표권을 이용해 투표
-        receipt.hasVoted = true;
-        receipt.reason = reason;
-        receipt.support = support;
-        receipt.votes = _amount;
-        // ballot의 정부 수정
-        ballot.voteToProject(_group, _pid, _amount);
+        Proposal storage proposal = proposals[_group][_projectID];
+        //  제안이 활성화 되어야 투표를 진행
+        require(
+            state(_group, _projectID) == ProposalState.Active,
+            "PODO: It's not a proposal period."
+        );
+        // 투표자 리스트에 새로운 투표자의 투표 정보 추가
+        voterInfo[_group][_projectID].push(
+            VoterInfo({
+                voter: _voter,
+                hasVoted: true,
+                reason: reason,
+                support: support,
+                votes: _amount
+            })
+        );
+
+        // 이전 찬반 투표양
+        uint256 beforeForVotes = proposal.forVotes;
+        uint256 beforeAgainstVotes = proposal.againstVotes;
+        // 제안에 투표한 투표권 추가
+        if (support) {
+            proposal.forVotes = beforeForVotes.add(_amount);
+        } else {
+            proposal.againstVotes = beforeAgainstVotes.add(_amount);
+        }
+        // ballot의 정보 수정
+        ballot.voteToProject(_voter, _group, _projectID, _amount);
         // TODO 프론트 이벤트 추가
     }
 }
@@ -253,13 +252,36 @@ interface TimelockInterface {
 }
 
 interface FunRaiseInterface {
-    function viewGroupProjectInfo(address _group, uint256 _pid) external;
+    // 모금 상태
+    enum FundRaiseState {
+        Pending,
+        Active,
+        Canceled,
+        Ended,
+        Queued
+    }
+
+    // 특정 프로젝트 정보 확인
+    function viewOneProject(address _group, uint256 _projectID) external;
+
+    // 모금활동 종료 여부
+    function isProjectEnd(address _group, uint256 _projectID)
+        external
+        view
+        returns (bool);
+
+    // 프로젝트의 존재 여부
+    function hasProject(address _group, uint256 _projectID)
+        external
+        view
+        returns (bool);
 }
 
-interface BallotInterface {
+interface BallotsInterface {
     function voteToProject(
+        address _voter,
         address _group,
-        uint256 _pid,
+        uint256 _projectID,
         uint256 _amount
-    ) external returns (uint256);
+    ) external;
 }
