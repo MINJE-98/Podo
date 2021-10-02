@@ -7,7 +7,6 @@ import "./openzeppelin/SafeMath.sol";
 
 contract Ballot is ERC20("Ballot", "BALLOT") {
     using SafeMath for uint256;
-    address public owner;
     // 유저정보
     struct UserInfo {
         uint256 donateAmount;
@@ -17,24 +16,13 @@ contract Ballot is ERC20("Ballot", "BALLOT") {
     mapping(address => mapping(uint256 => mapping(address => UserInfo)))
         public userInfo;
 
-    // 호출자의 주소 확인
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
-
-    // 컨트랙트 주인 설정
-    function setOwner(address _to) public onlyOwner {
-        owner = _to;
-    }
-
     // 투표권을 생성
     function mint(
         address _group,
         uint256 _projectID,
         address _to,
         uint256 _amount
-    ) external {
+    ) public onlyOwner {
         // 유저 인스턴스 생성
         UserInfo storage user = userInfo[_group][_projectID][_to];
         // 유저 기부 금액
