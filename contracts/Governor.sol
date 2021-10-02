@@ -12,7 +12,6 @@ contract Governor {
     IERC20 public podo;
 
     FunRaiseInterface public fundRaise;
-    TimelockInterface public timelock;
     BallotsInterface public ballot;
 
     // 투표 기간
@@ -63,17 +62,15 @@ contract Governor {
     constructor(
         IERC20 _podo,
         address _ballot,
-        address _fundRaise,
-        address _timelock
+        address _fundRaise
     ) {
         podo = _podo;
         ballot = BallotsInterface(_ballot);
         fundRaise = FunRaiseInterface(_fundRaise);
-        timelock = TimelockInterface(_timelock);
     }
 
     modifier onlyGroupOwner() {
-        // TODO 호출자가 그룹이 있는지 확인
+        require(fundRaise.hasGroup() == true, "PODO: Not found Group.");
         _;
     }
 
@@ -89,7 +86,7 @@ contract Governor {
         uint256 _projectID,
         string memory _title,
         string memory _desc
-    ) public {
+    ) public onlyGroupOwner {
         // _projectID에 해당하는 프로젝트가 존재해야함.
         require(
             fundRaise.hasProject(address(msg.sender), _projectID) == true,
@@ -158,9 +155,21 @@ contract Governor {
     }
 
     /**
-        통과
+        제안 실행
+
+        **조건
+        제안이 성공해야 제안 실행가능
      */
-    function execute() public {}
+    function execute(uint256 _projectID) public onlyGroupOwner {
+        //  제안이 성공해야 제안 실행가능
+        require(
+            state(address(msg.sender), _projectID) == ProposalState.Succeeded,
+            "PODO: It's not a proposal period."
+        );
+        // 출금을 요청할 제안
+        Proposal storage proposal = proposals[address(msg.sender)][_projectID];
+        // 현재 요청한 금액을 출금 요청합니다.
+    }
 
     /**
         제안 취소
@@ -217,40 +226,6 @@ contract Governor {
     }
 }
 
-interface TimelockInterface {
-    function delay() external view returns (uint256);
-
-    function GRACE_PERIOD() external view returns (uint256);
-
-    function acceptAdmin() external;
-
-    function queuedTransactions(bytes32 hash) external view returns (bool);
-
-    function queueTransaction(
-        address target,
-        uint256 value,
-        string calldata signature,
-        bytes calldata data,
-        uint256 eta
-    ) external returns (bytes32);
-
-    function cancelTransaction(
-        address target,
-        uint256 value,
-        string calldata signature,
-        bytes calldata data,
-        uint256 eta
-    ) external;
-
-    function executeTransaction(
-        address target,
-        uint256 value,
-        string calldata signature,
-        bytes calldata data,
-        uint256 eta
-    ) external payable returns (bytes memory);
-}
-
 interface FunRaiseInterface {
     // 모금 상태
     enum FundRaiseState {
@@ -269,6 +244,9 @@ interface FunRaiseInterface {
         external
         view
         returns (bool);
+
+    // 그룹의 존재 여부
+    function hasGroup() external view returns (bool);
 
     // 프로젝트의 존재 여부
     function hasProject(address _group, uint256 _projectID)
