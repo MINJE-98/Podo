@@ -71,13 +71,14 @@ contract Governor is Ownable {
     }
 
     /**
-            제안 생성
-            **조건
-            _title, _desc는 비어있으면 안됨
-            _projectID에 해당하는 프로젝트가 존재해야함.
-            모금활동이 끝난 상태이여야 한다.
-            프로젝트에 모금된 금액보다 크면 안됨
-         */
+        제안 생성
+
+        **조건
+        _title, _desc는 비어있으면 안됨
+        _projectID에 해당하는 프로젝트가 존재해야함.
+        모금활동이 끝난 상태이여야 한다.
+        프로젝트에 모금된 금액보다 크면 안됨
+    */
     event CreatedPropose(uint256 _proposeAmount, string _title, string _desc);
 
     function creatPropose(
@@ -126,10 +127,10 @@ contract Governor is Ownable {
     }
 
     /**
-            제안 실행
-            **조건
-            제안이 성공해야 제안 실행가능
-         */
+        제안 실행
+        **조건
+        제안이 성공해야 제안 실행가능
+    */
     function executeProse(uint256 _proposeId)
         public
         onlyGroupOwner(msg.sender)
@@ -168,13 +169,13 @@ contract Governor is Ownable {
     }
 
     /**
-            투표
-            **조건
-            제안이 존재하지 않는 경우
-            가지고 있는 투표수보다 많이 투표하는 경우
-            투표권이 없는 경우
-            투표가 진행중인 경우
-         */
+        투표
+        **조건
+        제안이 존재하지 않는 경우
+        가지고 있는 투표수보다 많이 투표하는 경우
+        투표권이 없는 경우
+        투표가 진행중인 경우
+    */
     event CastVote(
         address _voter,
         address _group,
@@ -230,7 +231,7 @@ contract Governor is Ownable {
     }
 
     /**
-            제안 상태 보기
+        제안 상태 보기
     */
     function state(address _group, uint256 proposeId)
         public

@@ -17,8 +17,7 @@ contract FundRaise is Ownable {
 
     // 모금 기간
     function fundPeriod() public pure returns (uint256) {
-        return 10;
-        // return 17280;
+        return 17280;
     } // ~3 days in blocks (assuming 15s blocks)
 
     // 그룹 정보
@@ -125,14 +124,14 @@ contract FundRaise is Ownable {
     }
 
     /**
-            후원자들이 프로젝트에 기부
+        후원자들이 프로젝트에 기부
 
-            **조건
-            존재하는 프로젝트인지 확인
-            프로젝트가 존재해야함
-            기부 금액이 0보다 커야함
-            기부자가 가지고있는 포도보다 큰지 확인
-         */
+        **조건
+        존재하는 프로젝트인지 확인
+        프로젝트가 존재해야함
+        기부 금액이 0보다 커야함
+        기부자가 가지고있는 포도보다 큰지 확인
+    */
     event DonatedToProject(address _group, uint256 _amount);
 
     function donateToProject(address _group, uint256 _amount) public {

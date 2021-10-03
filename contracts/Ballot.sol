@@ -51,7 +51,7 @@ contract Ballot is ERC20("Ballot", "BALLOT") {
         투표를 진행하는 경우 투표권이 소진됩니다.
         **조건
         유저의 투표권이 총 기부금액보다 작아야함.
-     */
+    */
     function voteToProject(
         address _voter,
         address _group,
