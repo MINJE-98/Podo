@@ -15,11 +15,16 @@ contract FundRaise is Ownable {
     Podo public podo;
     bytes32 public empty = keccak256(bytes(""));
 
+    // 모금 기간
+    function fundPeriod() public pure returns (uint256) {
+        return 10;
+        // return 17280;
+    } // ~3 days in blocks (assuming 15s blocks)
+
     // 그룹 정보
     struct GroupInfo {
         string groupName;
         string groupDesc;
-        ProjectInfo[] projects;
     }
 
     // 프로젝트
@@ -30,18 +35,11 @@ contract FundRaise is Ownable {
         uint256 currentMoney;
         uint256 startBlock;
         uint256 endBlock;
-        bool canceled;
-    }
-    // 모금 상태
-    enum FundRaiseState {
-        Pending,
-        Active,
-        Canceled,
-        Ended
     }
 
     // 그룹 주소 -> 그룹 정보
     mapping(address => GroupInfo) public groupInfo;
+    mapping(address => ProjectInfo) public projectInfo;
 
     constructor(Podo _podo, Ballot _ballot) {
         // 포도 컨트랙트 주입
@@ -65,6 +63,9 @@ contract FundRaise is Ownable {
         **조건
         _name, _desc가 비어있으면 안됨.
      */
+    // 그룹이 생성되었음을 알림
+    event CreatedGroup(string _groupName, string _groupDesc);
+
     function createGroup(string memory _groupName, string memory _groupDesc)
         public
     {
@@ -74,26 +75,32 @@ contract FundRaise is Ownable {
                 keccak256(bytes(_groupDesc)) != empty,
             "PODO: Please input group name, desc."
         );
-        // 메서드 호출자의 주소로 그룹을 생성
+        // 그룹 생성
         groupInfo[msg.sender].groupName = _groupName;
         groupInfo[msg.sender].groupDesc = _groupDesc;
-        // TODO 프론트 이벤트 추가
+        // 프론트 이벤트
+        emit CreatedGroup(_groupName, _groupDesc);
     }
 
     /**
         모금활동을 등록
-        모금활동을 등록하는 단체는 시작 시간과, 종료 시간을 선택 가능.
 
         **조건
         _title, _desc 는 비어있으면 안됨
         _targetmoney는 0보다 커야함
      */
+    event CreatedProject(
+        address _group,
+        string _projectName,
+        string _projectDesc,
+        uint256 _targetMoney
+    );
+
     function createProject(
+        address _group,
         string memory _projectName,
         string memory _projectDesc,
-        uint256 _targetMoney,
-        uint256 _startBlock,
-        uint256 _endBlock
+        uint256 _targetMoney
     ) public {
         require(
             keccak256(bytes(_projectName)) != empty &&
@@ -102,109 +109,54 @@ contract FundRaise is Ownable {
             "PODO: Please input group name, desc, targetmony."
         );
         // 현재 블럭
-        uint256 nowBlock = block.number;
-        // 시작 시간을 정합니다.
-        uint256 start = nowBlock.add(_startBlock);
-        // 끝나는 시간을 정합니다.
-        uint256 end = start.add(_endBlock);
+        uint256 startBlock = block.number;
+        // 종료 블럭
+        uint256 endBlock = startBlock.add(fundPeriod());
         // 프로젝트에 데이터를 삽입
-        groupInfo[msg.sender].projects.push(
-            ProjectInfo({
-                projectName: _projectName,
-                projectDesc: _projectDesc,
-                targetMoney: _targetMoney,
-                currentMoney: 0,
-                startBlock: start,
-                endBlock: end,
-                canceled: false
-            })
-        );
-        // TODO 프론트 이벤트 추가
+        ProjectInfo storage project = projectInfo[_group];
+        project.projectName = _projectName;
+        project.projectDesc = _projectDesc;
+        project.targetMoney = _targetMoney;
+        project.currentMoney = 0;
+        project.startBlock = startBlock;
+        project.endBlock = endBlock;
+        // 프론트 이벤트
+        emit CreatedProject(_group, _projectName, _projectDesc, _targetMoney);
     }
 
     /**
             후원자들이 프로젝트에 기부
 
             **조건
+            존재하는 프로젝트인지 확인
             프로젝트가 존재해야함
             기부 금액이 0보다 커야함
+            기부자가 가지고있는 포도보다 큰지 확인
          */
+    event DonatedToProject(address _group, uint256 _amount);
 
-    function donateToProject(
-        address _group,
-        uint256 _projectID,
-        uint256 _amount
-    ) public {
+    function donateToProject(address _group, uint256 _amount) public {
         // 존재하는 프로젝트인지 확인
-        require(
-            groupInfo[_group].projects.length - 1 >= _projectID,
-            "PODO: Not found project."
-        );
+        require(hasProject(_group), "PODO: Not found project.");
         // 모금이 끝난 프로젝트인지 확인
-        require(
-            fundRaiseState(_group, _projectID) != FundRaiseState.Ended,
-            "PODO: It's not a fundraising period."
-        );
+        require(fundRaiseState(_group), "PODO: It's not a fundraising period.");
         // 기부 금액이 0보다 커야함
         require(_amount > 0, "PODO: The donation amount cannot be zero.");
-        // 기부의 금액을 모금 컨트랙트에 전송
+        // 기부자가 가지고있는 포도보다 큰지 확인
+        require(
+            _amount < podo.balanceOf(msg.sender),
+            "PODO: It's bigger than the amount you have."
+        );
+        // 기부의 금액 모금활동으로 받습니다.
         podo.transferFrom(address(msg.sender), address(this), _amount);
         // 기부 받은 포도수 만큼 currentMoney에 추가시켜줌
-        groupInfo[_group].projects[_projectID].currentMoney += _amount;
+        projectInfo[_group].currentMoney = projectInfo[_group].currentMoney.add(
+            _amount
+        );
         // 기부자에게 투포권을 분배함
-        ballot.mint(_group, _projectID, address(msg.sender), _amount);
-        // TODO 프론트 이벤트 추가
-    }
-
-    /**
-            그룹의 모든 프로젝트 정보를 튜플로 반환합니다.
-         */
-    function viewTotalProjects(address _group)
-        public
-        view
-        returns (ProjectInfo[] memory)
-    {
-        ProjectInfo[] memory projects = groupInfo[_group].projects;
-        return projects;
-        // TODO 프론트 이벤트 추가
-    }
-
-    /**
-            그룹의 _projectID에 해당하는 프로젝트 정보를 튜플로 반환합니다.
-         */
-    function viewOneProject(address _group, uint256 _projectID)
-        public
-        view
-        returns (ProjectInfo memory)
-    {
-        return groupInfo[_group].projects[_projectID];
-        // TODO 프론트 이벤트 추가
-    }
-
-    /**
-        호출하는 주소가 그룹을 가지고있는지
-     */
-    function hasGroup() public view returns (bool) {
-        GroupInfo memory group = groupInfo[msg.sender];
-        if (keccak256(bytes(group.groupName)) != empty) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-        프로젝트의 존재여부
-     */
-    function hasProject(address _group, uint256 _projectID)
-        public
-        view
-        returns (bool)
-    {
-        // 프로젝트가 존재하는 ID일 경우
-        if (groupInfo[_group].projects.length - 1 <= _projectID) {
-            return true;
-        }
-        return false;
+        ballot.mint(_group, address(msg.sender), _amount);
+        // 프론트 이벤트
+        emit DonatedToProject(_group, _amount);
     }
 
     /**
@@ -213,50 +165,65 @@ contract FundRaise is Ownable {
         ** 조건
         프로젝트가 존재하는지 확인
      */
-    function fundRaiseState(address _group, uint256 _projectID)
-        public
-        view
-        returns (FundRaiseState)
-    {
+    function fundRaiseState(address _group) public view returns (bool) {
         // 프로젝트가 존재하는지 확인
-        require(
-            groupInfo[_group].projects.length - 1 >= _projectID,
-            "PODO: Not found project."
-        );
+        require(hasProject(_group), "PODO: Not found project.");
         // 프로젝트 정보 인스턴스 생성
-        ProjectInfo memory project = groupInfo[_group].projects[_projectID];
-        // 프로젝트 취소
-        if (project.canceled) {
-            return FundRaiseState.Canceled;
-        }
-        // 프로젝트 모금 대기
-        else if (block.number <= project.startBlock) {
-            return FundRaiseState.Pending;
-        }
+        ProjectInfo memory project = projectInfo[_group];
         // 프로젝트 모금 진행중
-        else if (block.number <= project.endBlock) {
-            return FundRaiseState.Active;
-        }
-        // 프로젝트 모금 종료
-        else {
-            return FundRaiseState.Ended;
-        }
-    }
-
-    /**
-        프로젝트의 모금 종료 여부
-     */
-    function isProjectEnd(address _group, uint256 _projectID)
-        public
-        view
-        returns (bool)
-    {
-        // 프로젝트 정보 인스턴스 생성
-        ProjectInfo memory project = groupInfo[_group].projects[_projectID];
-
-        if (block.number >= project.endBlock) {
+        if (block.number <= project.endBlock) {
             return true;
         }
         return false;
+    }
+
+    /**
+        포도 출금
+
+        **조건
+        프로젝트가 가지고있는 포도보다 작아야함
+     */
+    function withdraw(address _group, uint256 _amount) public onlyOwner {
+        // 프로젝트가 가지고있는 포도보다 작아야함
+        require(
+            projectInfo[_group].currentMoney >= _amount,
+            "PODO: The requested amount is greater than the vault amount."
+        );
+        // 요청금액 만큼 현재잔액에서 빼줌
+        projectInfo[_group].currentMoney -= _amount;
+
+        // 기부의 금액을 그룹 컨트랙트에 전송
+        podo.transfer(address(_group), _amount);
+    }
+
+    /**
+        그룹의 존재 여부
+     */
+    function hasGroup(address _group) public view returns (bool) {
+        if (keccak256(bytes(groupInfo[_group].groupName)) != empty) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+        프로젝트의 존재여부
+     */
+    function hasProject(address _group) public view returns (bool) {
+        if (keccak256(bytes(projectInfo[_group].projectName)) != empty) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+        프로젝트 정보 반환
+    */
+    function viewProject(address _group)
+        public
+        view
+        returns (ProjectInfo memory)
+    {
+        return projectInfo[_group];
     }
 }
