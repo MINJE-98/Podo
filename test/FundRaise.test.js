@@ -1,20 +1,21 @@
 const Podo = artifacts.require("./Podo.sol");
 const Ballot = artifacts.require("./Ballot.sol");
 const FundRaise = artifacts.require("./FundRaise.sol");
+const { expectRevert, time } = require('@openzeppelin/test-helpers');
 
-contract("FundRaise", ([alice, bob, carol, dev]) => {
-    const one = '100000000000000000';
-    const ten = '1000000000000000000'
-    const approve = '1000000000000000000000000000000000000000'
+contract("FundRaise", ([dev, alice, bob, carol]) => {
+    const onePodo = '100000000000000000';
+    const tenPodo = '1000000000000000000'
+    const approvePodo = '1000000000000000000000000000000000000000'
 
     let podo = null;
     let ballot = null;
     let fundRaise = null;
     /**
+     * dev : 개발자
      * alice : 그룹 관리자
      * bob : 그룹 관리자
      * carol : 기부자
-     * dev : 개발자
      * 1 PODO = 100000000000000000
      */
     before(async () => {
@@ -23,42 +24,36 @@ contract("FundRaise", ([alice, bob, carol, dev]) => {
         ballot = await Ballot.deployed({from: dev});
         fundRaise = await FundRaise.deployed(podo.address, ballot.address, {from: dev});
         // 각 유저에게 테스트를 위한 포도 배포
-        await podo.mint(alice, ten, {from: dev});
-        await podo.mint(bob, ten, {from: dev});
-        await podo.mint(carol, ten, {from: dev});
+        await podo.mint(alice, tenPodo, {from: dev});
+        await podo.mint(bob, tenPodo, {from: dev});
+        await podo.mint(carol, tenPodo, {from: dev});
         // 각 유저별로 fundRaise approve
-        await podo.approve(fundRaise.address, approve, {from: alice});
-        await ballot.approve(fundRaise.address, approve, {from: alice});
-        await podo.approve(fundRaise.address, approve, {from: bob});
-        await ballot.approve(fundRaise.address, approve, {from: bob});
-        await podo.approve(fundRaise.address, approve, {from: carol});
-        await ballot.approve(fundRaise.address, approve, {from: carol});
+        await podo.approve(fundRaise.address, approvePodo, {from: alice});
+        await ballot.approve(fundRaise.address, approvePodo, {from: alice});
+        await podo.approve(fundRaise.address, approvePodo, {from: bob});
+        await ballot.approve(fundRaise.address, approvePodo, {from: bob});
+        await podo.approve(fundRaise.address, approvePodo, {from: carol});
+        await ballot.approve(fundRaise.address, approvePodo, {from: carol});
+        // podo, ballot 소유자를 fundRaise로 변경
+        await podo.transferOwnership(fundRaise.address, {from: dev});
+        await ballot.transferOwnership(fundRaise.address, {from: dev});
     });
-
     /**
      * 그룹 생성
      */
-    // 각 주소당 1개의 그룹이 생성되는지 확인
-    it('Should created each groups', async ()=> {
+    // 그룹이 생성이 생성 되어야합니다.
+    it('Should created groups', async ()=> {
         // alice 그룹 생성
         await fundRaise.createGroup("alice", "i'm alice",{ from: alice});
-        // bob이 자신의 그룹을 생성합니다.
+        // bob이 그룹 생성
         await fundRaise.createGroup("bob", "i'm bob",{ from: bob});
-        // 생성한 그룹 변수에 저장
+        // 생성한 그룹 불러오기
         const aliceResult = await fundRaise.groupInfo(alice);
-        console.log(aliceResult);
-        const bobResult = await fundRaise.groupInfo(bob);
-        /**
-         * Start test
-         * 각 주소당 1개의 그룹이 생성되는지 확인
-         * 
-         * 1. alice의 그룹 정보
-         * 2. bob의 그룹 정보
-         */
-        // 1. alice의 그룹
+        // alice의 그룹 생성 확인
         assert(aliceResult.groupName === "alice");
         assert(aliceResult.groupDesc === "i'm alice");
-        // 2. bob의 그룹
+        const bobResult = await fundRaise.groupInfo(bob);
+        // bob의 그룹 생성 확인
         assert(bobResult.groupName === "bob");
         assert(bobResult.groupDesc === "i'm bob");
     })
@@ -69,51 +64,21 @@ contract("FundRaise", ([alice, bob, carol, dev]) => {
     // 한개의 프로젝트 생성
     it('Should create a new project', async ()=> {
         // alice의 모금 프로젝트 생성
-        await fundRaise.createProject("aliceDonate 1", "donateAlice 1", 10000, 0, 100000);
+        await fundRaise.createProject(alice, "aliceProjectTitle", "aliceProjectDesc", tenPodo, {from: alice});
         // 생성한 프로젝트 변수에 저장
-        const result = await fundRaise.viewOneProject(alice, 0);
-                /**
-         * Start test
-         * alice그룹이 두번째 새로운 프로젝트를 생성함.
-         * 
-         * 첫번째 프로젝트
-         * 1. projectName -> alcieDonate 1
-         * 2. projectDesc -> donateAlice 1
-         * 3. targetMoney -> 10000
-         * 새로운 프로젝트
-         * 4. projectName -> alcieDonate 2
-         * 5. projectDesc -> donateAlice 2
-         * targetMoney -> 2000000
-         */
-        assert(result.projectName === "aliceDonate 1");
-        assert(result.projectDesc === "donateAlice 1");
-        assert(result.targetMoney === "10000");
-    })
-    // 여러개의 프로젝트 생성
-    it('Should create a new projects', async ()=> {
-        // alice의 모금 프로젝트 생성
-        await fundRaise.createProject("aliceDonate 2", "donateAlice 2", 2000000, 0, 0);
+        const aliceProject = await fundRaise.viewProject(alice, {from: alice});
+        // alice의 모금 프로젝트 생성 확인
+        assert(aliceProject.projectName === "aliceProjectTitle");
+        assert(aliceProject.projectDesc === "aliceProjectDesc");
+        assert(aliceProject.targetMoney === tenPodo);
+        // bob 모금 프로젝트 생성
+        await fundRaise.createProject(bob, "bobProjectTitle", "bobProjectDesc", tenPodo, {from: bob});
         // 생성한 프로젝트 변수에 저장
-        const result = await fundRaise.viewTotalProjects(alice);
-        /**
-         * Start test
-         * alice그룹이 두번째 새로운 프로젝트를 생성함.
-         * 
-         * 첫번째 프로젝트
-         * 1. projectName -> alcieDonate 1
-         * 2. projectDesc -> donateAlice 1
-         * 3. targetMoney -> 10000
-         * 새로운 프로젝트
-         * 4. projectName -> alcieDonate 2
-         * 5. projectDesc -> donateAlice 2
-         * targetMoney -> 2000000
-         */
-        assert(result[0].projectName === "aliceDonate 1");
-        assert(result[0].projectDesc === "donateAlice 1");
-        assert(result[0].targetMoney === "10000");
-        assert(result[1].projectName === "aliceDonate 2");
-        assert(result[1].projectDesc === "donateAlice 2");
-        assert(result[1].targetMoney === "2000000");
+        const bobProject = await fundRaise.viewProject(bob, {from: bob});
+        // alice의 모금 프로젝트 생성 확인
+        assert(bobProject.projectName === "bobProjectTitle");
+        assert(bobProject.projectDesc === "bobProjectDesc");
+        assert(bobProject.targetMoney === tenPodo);
     })
 
     /**
@@ -122,30 +87,38 @@ contract("FundRaise", ([alice, bob, carol, dev]) => {
     // 모금이 진행중인 프로젝트에 기부
     it('The project is active.', async ()=>{
         // carol이 0번째 프로젝트에 1개의 포토를 기부함
-        await fundRaise.donateToProject(alice, 0, one, {from: carol});
-        // alice의 모든 프로젝트 정보
-        const resultProject = await fundRaise.viewTotalProjects(alice);
+        await fundRaise.donateToProject(alice, onePodo, {from: carol});
+        // 현재 모금활동으로 입금된 포도 갯수
+        const podoAmount = await podo.balanceOf(fundRaise.address);
+        // 기부받은 포도 확인
+        assert(podoAmount.toString() === onePodo);
+        // alice의 프로젝트 정보
+        const aliceProject = await fundRaise.viewProject(alice);
+        // 기부받은 포도 확인
+        assert(aliceProject.currentMoney === onePodo);
         // carol의 투표권 정보
-        const resultBallot = await ballot.userInfo(alice, 0, carol);
-
-        /**
-         * Start test
-         * alice그룹의 0번째 프로젝트에 carol이 1포도를 기부
-         * 
-         * 1. alice 그룹의 0번째 프로젝트에 1 포도가 있어야함.
-         * 2. carol은 1포도와 동등한 비율의 투표권이 있어야함.
-         */
-        // 1. alice 그룹의 0번째 프로젝트에 1 포도가 있어야함.
-        assert(resultProject[0].currentMoney === one);
-        // 2. carol은 1포도와 동등한 비율의 투표권이 있어야함.
-        assert(resultBallot.donateAmount.toString() === one);
+        const carolBallot = await ballot.userInfo(alice, carol);
+        // 발급 받은 투표권 확인
+        assert(carolBallot.donateAmount.toString() === onePodo);
     });
-
-    // 모금이 끝이난 프로젝트에 기부
-    it('The project is ended.', async ()=>{
+    // 가지고있는 포도 수보다 많이 기부
+    it('It\'s bigger than the amount you have.', async ()=>{
         try {
             // carol이 1번째 프로젝트에 1개의 포토를 기부함
-            await fundRaise.donateToProject(alice, 1, one, {from: carol});
+            await fundRaise.donateToProject(alice, approvePodo, {from: carol});
+        } catch (error) {
+            assert(error.reason === "PODO: It's bigger than the amount you have.");
+        }
+    });
+    // 모금이 끝이난 프로젝트에 기부
+    it('The project is ended.', async ()=>{
+        let nowBlock = await time.latestBlock()
+        nowBlock = +nowBlock.toString();
+        // 투표 기간 스킵
+        await time.advanceBlockTo(nowBlock + 15);
+        try {
+            // carol이 1번째 프로젝트에 1개의 포토를 기부함
+            await fundRaise.donateToProject(alice, onePodo, {from: carol});
         } catch (error) {
             assert(error.reason === "PODO: It's not a fundraising period.");
         }
