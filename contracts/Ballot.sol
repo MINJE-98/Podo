@@ -9,11 +9,16 @@ contract Ballot is ERC20("Ballot", "BALLOT") {
     using SafeMath for uint256;
     // 유저정보
     struct UserInfo {
-        uint256 donateAmount;
-        uint256 hasVoted;
+        uint256 voteAmount;
     }
-    // 그룹 주소 ->  유저 주소
-    mapping(address => mapping(address => UserInfo)) public userInfo;
+    // 기부한 캠페인 뽑아보려면?
+    // 캠페인 아이디를 개별로 들고있어야함
+    // 주소 -> 캠페인 아이디
+    mapping(address => uint256[]) public donatedProjectList;
+    // 캠페인 아이디 -> 유저 정보
+    mapping(uint256 => UserInfo) public userInfo;
+    // 캠페인의 제안에 투표 여부
+    mapping(uint256 => mapping(uint256 => bool)) public isVoted;
 
     modifier onlyContract() {
         require(
@@ -23,17 +28,21 @@ contract Ballot is ERC20("Ballot", "BALLOT") {
         _;
     }
 
-    // 투표권을 생성
+    /**
+        투표권 생성
+     */
     function mint(
-        address _group,
-        address _to,
-        uint256 _amount
+        uint256 _campaignId,
+        uint256 _amount,
+        address _to
     ) public onlyOwner {
-        // 유저 인스턴스 생성
-        UserInfo storage user = userInfo[_group][_to];
-        // 유저 기부 금액 유저 정보에 저장
-        user.donateAmount = user.donateAmount.add(_amount);
-        // 기부자에게 투표권 지급
+        // 1. 유저가 기부한 캠페인 추가
+        uint256[] storage projectlist = donatedProjectList[_to];
+        projectlist.push(_campaignId);
+        // 2. 캠페인 아이디에 해당하는 유저 정보 저장
+        UserInfo storage newuserInfo = userInfo[_campaignId];
+        newuserInfo.voteAmount = _amount;
+        // 3. 투표권 발급
         _mint(_to, _amount);
     }
 
@@ -45,7 +54,14 @@ contract Ballot is ERC20("Ballot", "BALLOT") {
     }
 
     /**
-        프로젝트에 투표를 함
+        기부한 캠페인 갯수
+     */
+    function campaignLength() public view returns (uint256) {
+        return donatedProjectList[msg.sender].length;
+    }
+
+    /**
+        캠페인에 투표를 함
 
         * 투표권 제거
         투표를 진행하는 경우 투표권이 소진됩니다.
@@ -54,24 +70,24 @@ contract Ballot is ERC20("Ballot", "BALLOT") {
      */
     function voteToProject(
         address _voter,
-        address _group,
+        uint256 _proposeId,
+        uint256 _campaignId,
         uint256 _amount
     ) public {
         // 유저 정보 인스턴스 생성
-        UserInfo storage user = userInfo[_group][_voter];
+        UserInfo storage user = userInfo[_campaignId];
         // 유저의 투표가능한 투표수는 자신이 기부한 갯수를 넘길 수 없음
         require(
-            user.donateAmount >= _amount,
+            user.voteAmount >= _amount,
             "PODO: Over the total number of votes."
         );
-        // 전체 기부금액과 hasVoted양이 같으면 더이상 투표가 불가능
-        require(
-            user.donateAmount != user.hasVoted && user.donateAmount != 0,
-            "PODO: You no longer have the right to vote available."
-        );
-        // 유저가 투표한 개수를 저장
-        user.hasVoted += _amount;
-        // 투표한 만큼 투표권 제거
+        // 이미 투표했다면 더이상 투표 불가능
+        require(!isVoted[_campaignId][_proposeId], "PODO: Already voted");
+        // 1. 유저가 투표한 투표권수를 현재 투표권수에서 빼준다.
+        user.voteAmount = user.voteAmount.sub(_amount);
+        // 2. 제안서에 투표 여부를 변경해준다.
+        isVoted[_campaignId][_proposeId] = true;
+        // 3. 기존에 들고있던 투표권을 없애준다.
         burnBallot(_voter, _amount);
     }
 }

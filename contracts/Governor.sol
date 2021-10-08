@@ -7,17 +7,18 @@ import "./openzeppelin/SafeMath.sol";
 import "./openzeppelin/Ownable.sol";
 import "./Podo.sol";
 import "./Ballot.sol";
-import "./FundRaise.sol";
+import "./Campaign.sol";
 
 contract Governor is Ownable {
     using SafeMath for uint256;
 
     bytes32 public empty = keccak256(bytes(""));
     uint256 votingStart = 0;
-    uint256 votingEnd = 177200;
+    uint256 votingEnd = 27700;
 
     Podo public podo;
-    FundRaise public fundRaise;
+    Group public group;
+    Campaign public campaign;
     Ballot public ballot;
 
     // 제안 정보
@@ -35,7 +36,6 @@ contract Governor is Ownable {
     // 투표자 정보
     struct VoterInfo {
         address voter;
-        bool hasVoted;
         bool support;
         uint256 votes;
         string reason;
@@ -49,44 +49,62 @@ contract Governor is Ownable {
         Executed,
         Pending
     }
-    // 그룹 주소 -> 제안
-    mapping(address => Proposal[]) public proposals;
-    // 그룹 주소 -> 투표자 매핑
-    mapping(address => mapping(uint256 => VoterInfo[])) public voterInfo;
+    // 캠페인에는 여러개의 제안을 쓸 수 있다.
+    // 캠페인에 접속해야 볼 수 있게
+    // 캠페인 아이디 -> 제안 배열
+    mapping(uint256 => Proposal[]) public proposals;
+
+    // 제안에는 여러명의 투표자들이 포함되어있다.
+    // 캠페인 아이디 -> 제안 아이디 -> 유저 정보
+    mapping(uint256 => mapping(uint256 => VoterInfo[])) public voterInfo;
 
     //  컨태랙트 주입
     constructor(
         Podo _podo,
         Ballot _ballot,
-        FundRaise _fundRaise
+        Group _group,
+        Campaign _campaign
     ) {
         podo = _podo;
         ballot = _ballot;
-        fundRaise = _fundRaise;
+        group = _group;
+        campaign = _campaign;
     }
 
-    modifier onlyGroupOwner(address _group) {
-        require(fundRaise.hasGroup(_group), "PODO: Not found Group.");
-        _;
+    // 캠페인에 제안의 개수
+    function getProposalLength(uint256 _campaignId)
+        public
+        view
+        returns (uint256)
+    {
+        return proposals[_campaignId].length;
     }
 
     /**
-            제안 생성
-            **조건
-            _title, _desc는 비어있으면 안됨
-            _projectID에 해당하는 프로젝트가 존재해야함.
-            모금활동이 끝난 상태이여야 한다.
-            프로젝트에 모금된 금액보다 크면 안됨
-         */
+        제안 생성
+        **조건
+        _title, _desc는 비어있으면 안됨
+        _projectID에 해당하는 프로젝트가 존재해야함.
+        모금활동이 끝난 상태이여야 한다.
+        프로젝트에 모금된 금액보다 크면 안됨
+    */
     event CreatedPropose(uint256 _proposeAmount, string _title, string _desc);
 
     function creatPropose(
+        uint256 _campaignId,
         uint256 _proposeAmount,
         string memory _title,
         string memory _desc
-    ) public onlyGroupOwner(msg.sender) {
-        // _projectID에 해당하는 프로젝트가 존재해야함.
-        require(fundRaise.hasProject(msg.sender), "PODO: Not found project.");
+    ) public {
+        // 그룹을 가지고있는지 확인
+        require(group.hasGroup(msg.sender));
+        // _campaignId에 해당하는 프로젝트가 존재해야함.
+        require(campaign.hasCampaign(_campaignId), "PODO: Not found project.");
+        // 프로젝트 권한 확인
+        require(
+            campaign.onlyCampaignOwner(msg.sender, _campaignId),
+            "PODO: Not permission!!!"
+        );
         //  _title, _desc는 비어있으면 안됨
         require(
             keccak256(bytes(_title)) != empty &&
@@ -95,12 +113,13 @@ contract Governor is Ownable {
         );
         // 모금이 끝난 프로젝트인지 확인
         require(
-            !fundRaise.fundRaiseState(msg.sender),
+            !campaign.campaignState(_campaignId),
             "PODO: Project is active."
         );
         // 프로젝트가 가지고있는 포도보다 작아야함
         require(
-            fundRaise.viewProject(msg.sender).currentMoney >= _proposeAmount,
+            campaign.getCampaignInfo(_campaignId).currentMoney >=
+                _proposeAmount,
             "PODO: The requested amount is greater than the vault amount."
         );
         // 현재 블럭
@@ -108,7 +127,7 @@ contract Governor is Ownable {
         // 종료 블럭
         uint256 endBlock = startBlock.add(votingEnd);
         // 제안 추가
-        proposals[msg.sender].push(
+        proposals[_campaignId].push(
             Proposal({
                 proposalTitle: _title,
                 proposalDesc: _desc,
@@ -130,41 +149,55 @@ contract Governor is Ownable {
             **조건
             제안이 성공해야 제안 실행가능
          */
-    function executeProse(uint256 _proposeId)
-        public
-        onlyGroupOwner(msg.sender)
-    {
+    function executeProse(uint256 _proposeId, uint256 _campaignId) public {
         //  제안이 성공해야 제안 실행가능
         require(
-            state(address(msg.sender), _proposeId) == ProposalState.Succeeded,
+            proposalState(_campaignId, _proposeId) == ProposalState.Succeeded,
             "PODO: The proposal doesn't successded."
         );
-        proposals[address(msg.sender)][_proposeId].executed = true;
-        // 현재 요청한 금액을 출금 요청합니다.
-        fundRaise.withdraw(
+        // 프로젝트 권한 확인
+        require(
+            campaign.onlyCampaignOwner(msg.sender, _campaignId),
+            "PODO: Not permission!!!"
+        );
+        // 제안은 한번 만 실행 가능
+        require(
+            !proposals[_campaignId][_proposeId].executed,
+            "PODO: Already executed"
+        );
+
+        // 1. 제안을 true로 변경
+        proposals[_campaignId][_proposeId].executed = true;
+        // 2. 출금 메서드 호출
+        campaign.withdraw(
             address(msg.sender),
-            proposals[address(msg.sender)][_proposeId].proposeAmount
+            _campaignId,
+            proposals[_campaignId][_proposeId].proposeAmount
         );
     }
 
     /**
         제안 취소
-
-        **조건 
+        **조건
         제안이 Pending상태일때 취소가 가능
     */
-    event CancelPropose(address _group, uint256 _proposeId);
+    event CancelPropose(uint256 _campaignId, uint256 _proposeId);
 
-    function cancelPropose(address _group, uint256 _proposeId) public {
+    function cancelPropose(uint256 _campaignId, uint256 _proposeId) public {
+        // 프로젝트 권한 확인
+        require(
+            campaign.onlyCampaignOwner(msg.sender, _campaignId),
+            "PODO: Not permission!!!"
+        );
         // 제안이 Pending상태일때 취소 가능
         require(
-            state(_group, _proposeId) == ProposalState.Pending,
+            proposalState(_campaignId, _proposeId) == ProposalState.Pending,
             "PODO: The vote has already started can't canceled."
         );
         // 제안 취소 처리
-        proposals[msg.sender][_proposeId].canceled = true;
+        proposals[_campaignId][_proposeId].canceled = true;
         // 프론트 이벤트
-        emit CancelPropose(_group, _proposeId);
+        emit CancelPropose(_campaignId, _proposeId);
     }
 
     /**
@@ -177,7 +210,7 @@ contract Governor is Ownable {
          */
     event CastVote(
         address _voter,
-        address _group,
+        uint256 _campaginId,
         uint256 _proposeId,
         uint256 _amount,
         string _reason,
@@ -186,7 +219,7 @@ contract Governor is Ownable {
 
     function castVote(
         address _voter,
-        address _group,
+        uint256 _campaginId,
         uint256 _proposeId,
         uint256 _amount,
         string memory _reason,
@@ -194,29 +227,35 @@ contract Governor is Ownable {
     ) public {
         // 제안이 활성화 기간일때만 투표가 가능
         require(
-            state(_group, _proposeId) == ProposalState.Active,
+            proposalState(_campaginId, _proposeId) == ProposalState.Active,
             "PODO: It's not a proposal period."
         );
-        // 제안에 투표한 투표권 추가
-        if (_support) {
-            proposals[_group][_proposeId].forVotes += _amount;
-        } else {
-            proposals[_group][_proposeId].againstVotes += _amount;
-        }
         // 투표자 정보에 투표 정보 추가
-        voterInfo[_group][_proposeId].push(
+        voterInfo[_campaginId][_proposeId].push(
             VoterInfo({
                 voter: msg.sender,
-                hasVoted: true,
                 support: _support,
                 votes: _amount,
                 reason: _reason
             })
         );
         // 유저가 투표한 수 저장, 투표권수 제거
-        ballot.voteToProject(_voter, _group, _amount);
+        ballot.voteToProject(_voter, _campaginId, _proposeId, _amount);
+        // 제안에 투표한 투표권 추가
+        if (_support) {
+            proposals[_campaginId][_proposeId].forVotes += _amount;
+        } else {
+            proposals[_campaginId][_proposeId].againstVotes += _amount;
+        }
         // 프론트 이벤트
-        emit CastVote(_voter, _group, _proposeId, _amount, _reason, _support);
+        emit CastVote(
+            _voter,
+            _campaginId,
+            _proposeId,
+            _amount,
+            _reason,
+            _support
+        );
     }
 
     // 투표 시작 딜레이 설정
@@ -230,15 +269,15 @@ contract Governor is Ownable {
     }
 
     /**
-            제안 상태 보기
+        제안 상태 보기
     */
-    function state(address _group, uint256 proposeId)
+    function proposalState(uint256 _campaginId, uint256 _proposeId)
         public
         view
         returns (ProposalState)
     {
         // 그룹 주소 -> 프로젝트 _projectID 인스턴스 생성
-        Proposal storage proposal = proposals[_group][proposeId];
+        Proposal storage proposal = proposals[_campaginId][_proposeId];
         // 제안이 취소됨
         if (proposal.canceled) {
             return ProposalState.Canceled;
