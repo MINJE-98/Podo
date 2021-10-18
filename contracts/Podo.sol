@@ -6,7 +6,7 @@ import "./openzeppelin/ERC20.sol";
 import "./openzeppelin/Ownable.sol";
 
 contract Podo is ERC20("PodoToken", "PODO") {
-    function mint(address _to, uint256 _amount) public onlyOwner {
+    function mint(address _to, uint256 _amount) public {
         _mint(_to, _amount);
     }
 }

@@ -4,7 +4,6 @@ import "./openzeppelin/SafeMath.sol";
 import "./openzeppelin/ERC20.sol";
 import "./openzeppelin/IERC20.sol";
 import "./Podo.sol";
-import "./Ballot.sol";
 import "./Group.sol";
 
 pragma solidity ^0.8.0;
@@ -13,12 +12,12 @@ contract Campaign is Ownable {
     using SafeMath for uint256;
 
     Group public group;
-    Ballot public ballot;
     Podo public podo;
     bytes32 public empty = keccak256(bytes(""));
 
     // 캠페인
     struct CampaignInfo {
+        address owner;
         string campaignName;
         string campaignDesc;
         uint256 targetMoney;
@@ -28,16 +27,40 @@ contract Campaign is Ownable {
     }
     // 캠페인에 기부한 유저
     struct UserInfo {
-        address user;
         uint256 donateAmount;
+        uint256 ballotAmount;
     }
+    // 그룹 주소 => 캠페인 리스트
     mapping(address => uint256[]) public campaignId;
-    mapping(uint256 => UserInfo[]) public userInfo;
+    // 캠페인 아이디 -> 유저 리스트
+    mapping(uint256 => address[]) public userList;
+    // 유저 주소 => 캠페인 아이디 => 유저 정보 리스트
+    mapping(address => mapping(uint256 => UserInfo)) public userInfo;
+    // 유저 주소 => 캠페인  리스트
+    mapping(address => uint256[]) public userDonatedList;
     CampaignInfo[] public campaignList;
 
-    // 모든 캠페인 갯수
+    // 유저가 기부한 캠페인 아이디 리스트
+    function getCampaignDonateduser(address _to)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        return userDonatedList[_to];
+    }
+
+    // 전체 그룹 길이
     function getCampaignLength() public view returns (uint256) {
         return campaignList.length;
+    }
+
+    // 그룹의 캠페인 아이디 반환
+    function getCampaignList(address _group)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        return campaignId[_group];
     }
 
     // 특정 캠페인 반환
@@ -55,7 +78,25 @@ contract Campaign is Ownable {
         view
         returns (uint256)
     {
-        return userInfo[_campaignId].length;
+        return userList[_campaignId].length;
+    }
+
+    // 캠페인에 기부한 유저 리스트
+    function getCampaignUserList(uint256 _campaignId)
+        public
+        view
+        returns (address[] memory)
+    {
+        return userList[_campaignId];
+    }
+
+    // 캠페인에 기부한 특정 유저 정보
+    function getCampaignUserInfo(uint256 _campaignId, address _user)
+        public
+        view
+        returns (UserInfo memory)
+    {
+        return userInfo[_user][_campaignId];
     }
 
     //  그룹별 캠페인 개수
@@ -68,15 +109,9 @@ contract Campaign is Ownable {
     }
 
     // 캠페인 아이디
-    constructor(
-        Podo _podo,
-        Ballot _ballot,
-        Group _group
-    ) {
+    constructor(Podo _podo, Group _group) {
         // 포도 컨트랙트 주입
         podo = _podo;
-        // 투표 컨트랙트 주입
-        ballot = _ballot;
         // 그룹 컨트랙트 주입
         group = _group;
     }
@@ -106,7 +141,7 @@ contract Campaign is Ownable {
         **조건
         _title, _desc 는 비어있으면 안됨
         _targetmoney는 0보다 커야함`
-     */
+    */
     event CreatedCampaign(
         string _campaignName,
         string _campaignDesc,
@@ -133,6 +168,7 @@ contract Campaign is Ownable {
         uint256 endTime = startTime.add(endBlock);
         // 입력받은 캠페인 인스턴스 생성
         CampaignInfo memory newCampaign = CampaignInfo({
+            owner: msg.sender,
             campaignName: _campaignName,
             campaignDesc: _campaignDesc,
             targetMoney: _targetMoney,
@@ -149,14 +185,14 @@ contract Campaign is Ownable {
     }
 
     /**
-            후원자들이 캠페인에 기부
+        후원자들이 캠페인에 기부
 
-            **조건
-            존재하는 캠페인인지 확인
-            캠페인가 존재해야함
-            기부 금액이 0보다 커야함
-            기부자가 가지고있는 포도보다 큰지 확인
-         */
+        **조건
+        존재하는 캠페인인지 확인
+        캠페인가 존재해야함
+        기부 금액이 0보다 커야함
+        기부자가 가지고있는 포도보다 큰지 확인
+    */
     event DonatedTocampaign(uint256 _campaignId, uint256 _amount);
 
     function donateTocampaign(uint256 _campaignId, uint256 _amount) public {
@@ -171,7 +207,7 @@ contract Campaign is Ownable {
         require(_amount > 0, "PODO: The donation amount cannot be zero.");
         // 기부자가 가지고있는 포도보다 큰지 확인
         require(
-            _amount < podo.balanceOf(msg.sender),
+            _amount <= podo.balanceOf(msg.sender),
             "PODO: It's bigger than the amount you have."
         );
         // 기부의 금액 모금활동으로 받습니다.
@@ -179,17 +215,45 @@ contract Campaign is Ownable {
         // 1. 포도 받아야함
         podo.transferFrom(msg.sender, address(this), _amount);
         // 2. 캠페인에 기부한 유저 정보 저장
-        userInfo[_campaignId].push(
-            UserInfo({user: msg.sender, donateAmount: _amount})
-        );
+        userInfo[msg.sender][_campaignId].donateAmount = userInfo[msg.sender][
+            _campaignId
+        ].donateAmount.add(_amount);
+        userInfo[msg.sender][_campaignId].ballotAmount = userInfo[msg.sender][
+            _campaignId
+        ].ballotAmount.add(_amount);
+        // 3. 유저 리스트에 유저 추가
+        bool check = false;
+        // 이미 배열에 있는지 확인
+        for (uint256 i = 0; i < userList[_campaignId].length; i++) {
+            if (userList[_campaignId][i] == msg.sender) {
+                check = true;
+                break;
+            }
+        }
+        if (!check) {
+            userList[_campaignId].push(msg.sender);
+            userDonatedList[msg.sender].push(_campaignId);
+        }
         // 3. 캠페인에 현재 기부금액 업데이트
         campaignList[_campaignId].currentMoney = campaignList[_campaignId]
             .currentMoney
             .add(_amount);
         // 4. 투표권에 기부한 유저 투표권 발급
-        ballot.mint(_campaignId, _amount, msg.sender);
         // 프론트 이벤트
         emit DonatedTocampaign(_campaignId, _amount);
+    }
+
+    /**
+        투표권 제거
+     */
+    function burnBallot(
+        address _voter,
+        uint256 _campaignId,
+        uint256 _amount
+    ) public {
+        userInfo[_voter][_campaignId].ballotAmount = userInfo[_voter][
+            _campaignId
+        ].ballotAmount.sub(_amount);
     }
 
     /**
@@ -213,12 +277,12 @@ contract Campaign is Ownable {
 
         **조건
         캠페인가 가지고있는 포도보다 작아야함
-     */
+    */
     function withdraw(
         address _group,
         uint256 _campaignId,
         uint256 _amount
-    ) public onlyOwner {
+    ) public {
         // 캠페인가 가지고있는 포도보다 작아야함
         require(
             campaignList[_campaignId].currentMoney >= _amount,

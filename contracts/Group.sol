@@ -29,6 +29,11 @@ contract Group {
     mapping(address => GroupInfo) public groupInfo;
     address[] public groupList;
 
+    // 그룹 리스트 반환
+    function getGroupsList() public view returns (address[] memory) {
+        return groupList;
+    }
+
     // 그룹 개수 반환
     function getGroupLength() public view returns (uint256) {
         return groupList.length;

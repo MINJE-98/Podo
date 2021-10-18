@@ -6,12 +6,10 @@ import "./openzeppelin/IERC20.sol";
 import "./openzeppelin/SafeMath.sol";
 import "./openzeppelin/Ownable.sol";
 import "./Podo.sol";
-import "./Ballot.sol";
 import "./Campaign.sol";
 
 contract Governor is Ownable {
     using SafeMath for uint256;
-
     bytes32 public empty = keccak256(bytes(""));
     uint256 votingStart = 0;
     uint256 votingEnd = 27700;
@@ -19,8 +17,6 @@ contract Governor is Ownable {
     Podo public podo;
     Group public group;
     Campaign public campaign;
-    Ballot public ballot;
-
     // 제안 정보
     struct Proposal {
         string proposalTitle;
@@ -53,22 +49,28 @@ contract Governor is Ownable {
     // 캠페인에 접속해야 볼 수 있게
     // 캠페인 아이디 -> 제안 배열
     mapping(uint256 => Proposal[]) public proposals;
-
     // 제안에는 여러명의 투표자들이 포함되어있다.
     // 캠페인 아이디 -> 제안 아이디 -> 유저 정보
     mapping(uint256 => mapping(uint256 => VoterInfo[])) public voterInfo;
 
-    //  컨태랙트 주입
+    //  컨트랙트 주입
     constructor(
         Podo _podo,
-        Ballot _ballot,
         Group _group,
         Campaign _campaign
     ) {
         podo = _podo;
-        ballot = _ballot;
         group = _group;
         campaign = _campaign;
+    }
+
+    // 제안서 내용 반환
+    function getProposalInfo(uint256 _proposalId, uint256 _campaignId)
+        public
+        view
+        returns (Proposal memory)
+    {
+        return proposals[_campaignId][_proposalId];
     }
 
     // 캠페인에 제안의 개수
@@ -90,7 +92,7 @@ contract Governor is Ownable {
     */
     event CreatedPropose(uint256 _proposeAmount, string _title, string _desc);
 
-    function creatPropose(
+    function createPropose(
         uint256 _campaignId,
         uint256 _proposeAmount,
         string memory _title,
@@ -145,10 +147,10 @@ contract Governor is Ownable {
     }
 
     /**
-            제안 실행
-            **조건
-            제안이 성공해야 제안 실행가능
-         */
+        제안 실행
+        **조건
+        제안이 성공해야 제안 실행가능
+    */
     function executeProse(uint256 _proposeId, uint256 _campaignId) public {
         //  제안이 성공해야 제안 실행가능
         require(
@@ -165,7 +167,6 @@ contract Governor is Ownable {
             !proposals[_campaignId][_proposeId].executed,
             "PODO: Already executed"
         );
-
         // 1. 제안을 true로 변경
         proposals[_campaignId][_proposeId].executed = true;
         // 2. 출금 메서드 호출
@@ -201,13 +202,13 @@ contract Governor is Ownable {
     }
 
     /**
-            투표
-            **조건
-            제안이 존재하지 않는 경우
-            가지고 있는 투표수보다 많이 투표하는 경우
-            투표권이 없는 경우
-            투표가 진행중인 경우
-         */
+        투표
+        **조건
+        제안이 존재하지 않는 경우
+        가지고 있는 투표수보다 많이 투표하는 경우
+        투표권이 없는 경우
+        투표가 진행중인 경우
+    */
     event CastVote(
         address _voter,
         uint256 _campaginId,
@@ -219,7 +220,7 @@ contract Governor is Ownable {
 
     function castVote(
         address _voter,
-        uint256 _campaginId,
+        uint256 _campaignId,
         uint256 _proposeId,
         uint256 _amount,
         string memory _reason,
@@ -227,11 +228,11 @@ contract Governor is Ownable {
     ) public {
         // 제안이 활성화 기간일때만 투표가 가능
         require(
-            proposalState(_campaginId, _proposeId) == ProposalState.Active,
+            proposalState(_campaignId, _proposeId) == ProposalState.Active,
             "PODO: It's not a proposal period."
         );
         // 투표자 정보에 투표 정보 추가
-        voterInfo[_campaginId][_proposeId].push(
+        voterInfo[_campaignId][_proposeId].push(
             VoterInfo({
                 voter: msg.sender,
                 support: _support,
@@ -240,17 +241,17 @@ contract Governor is Ownable {
             })
         );
         // 유저가 투표한 수 저장, 투표권수 제거
-        ballot.voteToProject(_voter, _campaginId, _proposeId, _amount);
+        campaign.burnBallot(_voter, _campaignId, _amount);
         // 제안에 투표한 투표권 추가
         if (_support) {
-            proposals[_campaginId][_proposeId].forVotes += _amount;
+            proposals[_campaignId][_proposeId].forVotes += _amount;
         } else {
-            proposals[_campaginId][_proposeId].againstVotes += _amount;
+            proposals[_campaignId][_proposeId].againstVotes += _amount;
         }
         // 프론트 이벤트
         emit CastVote(
             _voter,
-            _campaginId,
+            _campaignId,
             _proposeId,
             _amount,
             _reason,
