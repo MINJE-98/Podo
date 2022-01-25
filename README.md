@@ -13,12 +13,6 @@ sudo npm install -g truffle
 truffle version
 ```
 
-### Truffle init
-
-```jsx
-truffle init
-```
-
 ## install Ganache-cli
 
 ```jsx
