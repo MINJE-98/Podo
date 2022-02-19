@@ -1,0 +1,25 @@
+{
+  "files": {
+    "main.js": "/podo/static/js/main.fbc972f4.chunk.js",
+    "main.js.map": "/podo/static/js/main.fbc972f4.chunk.js.map",
+    "runtime-main.js": "/podo/static/js/runtime-main.4b1f049e.js",
+    "runtime-main.js.map": "/podo/static/js/runtime-main.4b1f049e.js.map",
+    "static/css/2.dc3eb7bc.chunk.css": "/podo/static/css/2.dc3eb7bc.chunk.css",
+    "static/js/2.75bfc561.chunk.js": "/podo/static/js/2.75bfc561.chunk.js",
+    "static/js/2.75bfc561.chunk.js.map": "/podo/static/js/2.75bfc561.chunk.js.map",
+    "index.html": "/podo/index.html",
+    "static/css/2.dc3eb7bc.chunk.css.map": "/podo/static/css/2.dc3eb7bc.chunk.css.map",
+    "static/js/2.75bfc561.chunk.js.LICENSE.txt": "/podo/static/js/2.75bfc561.chunk.js.LICENSE.txt",
+    "static/media/background.5f7ed18f.jpeg": "/podo/static/media/background.5f7ed18f.jpeg",
+    "static/media/howtowork.69b45f5e.png": "/podo/static/media/howtowork.69b45f5e.png",
+    "static/media/index.css": "/podo/static/media/inter-vietnamese-400-normal.bc4d5149.woff2",
+    "static/media/main.f70ceae5.png": "/podo/static/media/main.f70ceae5.png",
+    "static/media/proposal.1bbba96e.jpeg": "/podo/static/media/proposal.1bbba96e.jpeg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.4b1f049e.js",
+    "static/css/2.dc3eb7bc.chunk.css",
+    "static/js/2.75bfc561.chunk.js",
+    "static/js/main.fbc972f4.chunk.js"
+  ]
+}
