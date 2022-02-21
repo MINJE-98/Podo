@@ -4,7 +4,6 @@
 2. [Tech Stack](#Tech-Stack)
 3. [Service Flow](#Service-Flow)
 4. [Demo & QuickView](#Demo-&-QuickView)
-5. [What I learned](#What-I-learned)
 # 왜 필요하죠?
 단체의 성과를 직접적으로 확인하여 기부 여부를 결정할 수 있는 후원이 있는가 하면, 도움이 필요한 상황만 있고, 후원이 어떻게 사용되는지 기부자가 정확하게 알 수 없는 후원이 있다.
 
@@ -96,29 +95,4 @@ https://minje-98.github.io/Podo/
 ## QuickView
 
 [![Output](https://user-images.githubusercontent.com/56459078/154900758-d7a4085a-5218-48af-87eb-d2ae9b16e1d4.png)](https://www.youtube.com/watch?v=WQ04huKTywE&feature=youtu.be)
-# What I learned
-## Truffle
-
-트러플을 이용하여 스마트 계약을 작성하도록 배웠고 트러플은 계약 배포, 테스트 등 다양하게 기능을 제공한다.
-
-### Truffle의 불편한점
-
-1. 스마트계약을 배포 후 스마트계약과 상호작용이 불가능하다.
-2. 디버깅하기 정말 불편하다.
-
-### HardHat
-
-오픈소스 프로젝트 Dapp들을 살펴보았는데 Truffle을 사용하는 개발자들이 거의없었다. 대부분 내가 느낀 불편함때문에 트러플을 사용하지 않고 HardHat를 사용하고 있었다.
-
-트러플의 단점들을 보완하고 나왔다고 한다. 추후 HardHat에 대해 나중에 스마트컨트랙트를 작성할 일이 생긴다면 정확히 조사하여 작성해보도록하겠다.
-
-## Dapp은 백엔드가 필수인가?
-
-최근 인기가 많은 P2E, NFT 등등의 사례를 보면 ERC721, 1155에서 NFT를 만들때 MetaData를 입력하여 구현하게 되어있다.
-
-MetaData는 해당 NFT의 정보를 나타내는데, 보통의 NFT의 경우는 이미지가 반드시 붙어있다. 이미지 뿐만아니라 유저 정보, 게임에 대한 정보는 블록체인과 계속해서 싱크를 맞추게 된다면 어마어마한 수수료를 제출해야한다.
-
-나는 어떤 정보든 블록체인에 저장하게 된다면 해당 서비스를 사용하는 사용자입장에서는 좀 더 투명한 서비스를 사용한다는 생각을 갖게 한다고 믿고 있기에 위와같은 블록체인의 한계를 직접 느껴보지 않았지만 알 수 
-있게되었다.
-
 
