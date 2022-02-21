@@ -89,13 +89,13 @@
 - 투표를 진행하기 위해 무조건 투표 사유를 작성하여야 합니다.
 # Demo & QuickView
 ## Demo
-> 직접 데모에서 서비스를 경험하실 수 있습니다.
-
+> 직접 데모에서 서비스를 경험하실 수 있습니다.</br>
 > 데모 경험을위해 MetaMask가 설치되어 있어야하며, Repston 테스트 네트워크로 접속해야합니다.
+
 https://minje-98.github.io/Podo/
 ## QuickView
 
-[![Output](![image](https://user-images.githubusercontent.com/56459078/154900758-d7a4085a-5218-48af-87eb-d2ae9b16e1d4.png))](https://www.youtube.com/watch?v=WQ04huKTywE&feature=youtu.be)
+[![Output](https://user-images.githubusercontent.com/56459078/154900758-d7a4085a-5218-48af-87eb-d2ae9b16e1d4.png)](https://www.youtube.com/watch?v=WQ04huKTywE&feature=youtu.be)
 # What I learned
 ## Truffle
 
