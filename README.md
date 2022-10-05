@@ -87,24 +87,44 @@
 반대에 투표를 할 수 있습니다.
 
 - 투표를 진행하기 위해 무조건 투표 사유를 작성하여야 합니다.
-# Demo & QuickView
+# QuickView
 ## 주요기능
 
 ### 로그인
 ![login](https://user-images.githubusercontent.com/56459078/193983912-22f6789d-db9c-41a6-88c6-477c9551265e.gif)
 
 ### 그룹 생성
+> 그룹은 기부를 받기 위한 하나의 단체입니다. 예를 들어 유니세프가 있습니다.
+
+
 ![그룹생성](https://user-images.githubusercontent.com/56459078/193983951-ccc5451c-2050-4762-8528-d9bfe89c5256.gif)
 
+### 캠페인 생성
+> 캠페인은 그룹이 특정 기부 캠페인을 개설하고 캐페인을 통해 사용자로부터 후원금을 받을 수 있는 행위입니다.
+
+
+![무제 mp4](https://user-images.githubusercontent.com/56459078/193985020-112f38a0-e0c7-4030-950d-da9c9ca5c691.gif)
 
 ### 기부하기
+> 후원자들은 기부를 하게되면 기부한 금액에 맞게 투표권이 생깁니다.
+
+
 ![기부하기](https://user-images.githubusercontent.com/56459078/193983953-0d61596b-ceda-4083-bec8-3c855d70b447.gif)
 
 
 ### 제안서 작성
+> 제안서를 통해 후원자들에게 특정 캠페인의 후원금 사용 방향을 제시합니다.
+
+
 ![제안서 작성](https://tilog-file-service-s3.s3.ap-northeast-2.amazonaws.com/128an0iggp1p2022-06-21%2009%3A39%3A54.gif)
 
+
 ### 투표하기
+> 기부자들이 제안서를 보고 찬반 여부를 결정합니다.
+> 찬성의 경우 제안서에 작성한 금액을 받을 수 있습니다.
+> 반대의 경우 다시 제안서를 작성해야합니다.
+
+
 ![투표하기](https://user-images.githubusercontent.com/56459078/193983924-397d00cb-49bc-4261-a814-94808cc2ff00.gif)
 
 
