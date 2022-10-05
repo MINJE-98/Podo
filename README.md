@@ -88,12 +88,27 @@
 
 - 투표를 진행하기 위해 무조건 투표 사유를 작성하여야 합니다.
 # Demo & QuickView
-## Demo
-> 직접 데모에서 서비스를 경험하실 수 있습니다.</br>
-> 데모 경험을위해 MetaMask가 설치되어 있어야하며, Repston 테스트 네트워크로 접속해야합니다.
+## 주요기능
 
-https://minje-98.github.io/Podo/
-## QuickView
+### 로그인
+![login](https://user-images.githubusercontent.com/56459078/193983912-22f6789d-db9c-41a6-88c6-477c9551265e.gif)
+
+### 그룹 생성
+![그룹생성](https://user-images.githubusercontent.com/56459078/193983951-ccc5451c-2050-4762-8528-d9bfe89c5256.gif)
+
+
+### 기부하기
+![기부하기](https://user-images.githubusercontent.com/56459078/193983953-0d61596b-ceda-4083-bec8-3c855d70b447.gif)
+
+
+### 제안서 작성
+![제안서 작성](https://tilog-file-service-s3.s3.ap-northeast-2.amazonaws.com/128an0iggp1p2022-06-21%2009%3A39%3A54.gif)
+
+### 투표하기
+![투표하기](https://user-images.githubusercontent.com/56459078/193983924-397d00cb-49bc-4261-a814-94808cc2ff00.gif)
+
+
+## 동영상
 
 [![Output](https://user-images.githubusercontent.com/56459078/154900758-d7a4085a-5218-48af-87eb-d2ae9b16e1d4.png)](https://www.youtube.com/watch?v=WQ04huKTywE&feature=youtu.be)
 
