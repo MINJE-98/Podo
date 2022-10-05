@@ -1,17 +1,17 @@
 # 탈중앙화 참여형 기부 플랫폼(Podo)
 # TOC
-1. [Why Podo?](#Why-Podo?)
-2. [Tech Stack](#Tech-Stack)
+1. [WhyPodo?](#WhyPodo?)
+2. [TechStack](#TechStack)
 3. [Service Flow](#ServiceFlow)
 4. [QuickView](#QuickView)
-# Why Podo?
+# WhyPodo?
 항상 후원금은 어디에 어떻게 왜 사용되는지 기부자들은 정확히 알수없었습니다. 또한 기부자가 기부하는 돈의 대부분은 사업비라는 항목으로 사용이 되는 경우가 많았습니다.
 이러한 부분들이 현재의 기부의 문제점이라고 생각하였습니다. 
 
 집답을 형성하고 집단끼리 의사 소통을 통해 하나의 큰 일을 결정하는 것이 DAO입니다.
 블록체인상의 기부금을 Lock하고 Lock된 기부금을 다오들의 투표를 통해 집행여부를 결정하는 시스템을 생각해봤습니다.
 
-# Tech Stack
+# TechStack
 ## BlockChain
 - Ethereum
     - Solidity
