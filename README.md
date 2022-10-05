@@ -1,10 +1,10 @@
 # 탈중앙화 참여형 기부 플랫폼(Podo)
-# Contents
-1. [왜 필요하죠?](#왜-필요하죠?)
+# TOC
+1. [Why Podo?](#Why-Podo?)
 2. [Tech Stack](#Tech-Stack)
-3. [Service Flow](#Service-Flow)
-4. [Demo & QuickView](#Demo-&-QuickView)
-# 왜 필요하죠?
+3. [Service Flow](#ServiceFlow)
+4. [QuickView](#QuickView)
+# Why Podo?
 항상 후원금은 어디에 어떻게 왜 사용되는지 기부자들은 정확히 알수없었습니다. 또한 기부자가 기부하는 돈의 대부분은 사업비라는 항목으로 사용이 되는 경우가 많았습니다.
 이러한 부분들이 현재의 기부의 문제점이라고 생각하였습니다. 
 
@@ -12,16 +12,18 @@
 블록체인상의 기부금을 Lock하고 Lock된 기부금을 다오들의 투표를 통해 집행여부를 결정하는 시스템을 생각해봤습니다.
 
 # Tech Stack
-## BackEnd
+## BlockChain
 - Ethereum
     - Solidity
 - Truffle
 - Ganache
+
+
 ## FrontEnd
 - ReactJS
 - web3JS
 - MetaMask
-# Service Flow
+# ServiceFlow
 ## 단체
 ### 등록
 
@@ -127,8 +129,4 @@
 
 ![투표하기](https://user-images.githubusercontent.com/56459078/193983924-397d00cb-49bc-4261-a814-94808cc2ff00.gif)
 
-
-## 동영상
-
-[![Output](https://user-images.githubusercontent.com/56459078/154900758-d7a4085a-5218-48af-87eb-d2ae9b16e1d4.png)](https://www.youtube.com/watch?v=WQ04huKTywE&feature=youtu.be)
 
