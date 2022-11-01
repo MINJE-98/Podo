@@ -130,3 +130,6 @@
 ![투표하기](https://user-images.githubusercontent.com/56459078/193983924-397d00cb-49bc-4261-a814-94808cc2ff00.gif)
 
 
+## 동영상
+
+[![Output](https://user-images.githubusercontent.com/56459078/154900758-d7a4085a-5218-48af-87eb-d2ae9b16e1d4.png)](https://www.youtube.com/watch?v=WQ04huKTywE&feature=youtu.be)
